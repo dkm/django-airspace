@@ -1,0 +1,9 @@
+
+{% block content %}
+    <h2>AirSpaces</h2>
+    <ul>
+        {% for as in object_list %}
+            <li>{{ as.name }} :: <a href="json/{{ as.id }}">JSON</a></li>
+        {% endfor %}
+    </ul>
+{% endblock %}
