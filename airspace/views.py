@@ -15,6 +15,7 @@ def json_zone(request, zone_id):
 
 
 def amap(request):
+    all_as = AirSpaces.objects.all()
     return render_to_response('airspace/amap.html',
-                              {},
+                              {'as_list' : all_as},
                               context_instance=RequestContext(request))
