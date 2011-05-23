@@ -11,6 +11,9 @@
  
 </head> 
   <body> 
+        <form id="debug"><input type="submit" name"debug"/> </form>
+    <div id="coords"></div> 
+
         <div id="map" class="smallmap"></div> 
 	<div id="highlighted"></div> 
 	<div id="info"></div> 
@@ -30,7 +33,8 @@
 	<script defer="defer" type="text/javascript"> 
 
         var map = new OpenLayers.Map('map', {
-	                             projection: new OpenLayers.Projection("EPSG:900913")
+	                projection: new OpenLayers.Projection("EPSG:900913"),
+                        displayProjection: new OpenLayers.Projection("EPSG:4326")
 	});
  
 //        var wms = new OpenLayers.Layer.WMS( "OpenLayers WMS",
@@ -46,9 +50,16 @@
 	var layer_switcher = new OpenLayers.Control.LayerSwitcher();
 	map.addControl(layer_switcher);
         layer_switcher.activate();
-        map.setCenter(new OpenLayers.LonLat(0, 0), 1);
- 
 
+        map.addControl(new OpenLayers.Control.MousePosition());
+
+	map.events.register("mousemove", map, function(e) { 
+                var position = this.events.getMousePosition(e);
+                OpenLayers.Util.getElement("coords").innerHTML = position;
+        });
+
+        map.setCenter(new OpenLayers.LonLat(1, 1), 5);
+        
 	$('#interload').submit(function() {
 	   $.getJSON($('#interurl').val(), function(data){
 	      $.each(data, function(index, inter) {
@@ -58,6 +69,12 @@
 	   return false;
 	});
  
+        $('#debug').submit( function () {
+            bounds = map.getExtent().transform(map.projection, map.displayProjection);
+	    alert(bounds.toBBOX());
+            return false;
+        });
+
 	function loadAS(asid){
            $.getJSON('/airspace/json/' + asid, 
                      function(data) {
