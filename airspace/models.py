@@ -1,6 +1,7 @@
 # Create your models here.
 # This is an auto-generated Django model module created by ogrinspect.
 from django.contrib.gis.db import models
+import geojson
 
 class AirSpaces(models.Model):
     name = models.CharField(max_length=100)
@@ -10,11 +11,18 @@ class AirSpaces(models.Model):
     geom = models.PolygonField()
     objects = models.GeoManager()
 
-
     # So the model is pluralized correctly in the admin.
     class Meta:
         verbose_name_plural = "Air Spaces"
 
+    @property
+    def __geo_interface__(self):
+        f = {'type': 'Feature',
+             'properties': {}, 
+             'geometry': geojson.loads(self.geom.json)}
+
+        return f
+    
     # Returns the string representation of the model.
     def __unicode__(self):
         return self.name
