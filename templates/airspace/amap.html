@@ -12,7 +12,7 @@
 </head> 
   <body> 
         <form id="debug"><input type="submit" name"debug"/> </form>
-    <div id="coords"></div> 
+	<div id="coords"></div> <field><label>Zone Count</label><div id="zone_count"></div></field>
 
         <div id="map" class="smallmap"></div> 
 	<div id="highlighted"></div> 
@@ -58,7 +58,7 @@
                 OpenLayers.Util.getElement("coords").innerHTML = position;
         });
 
-        map.setCenter(new OpenLayers.LonLat(1, 1), 5);
+        map.setCenter(new OpenLayers.LonLat(1, 1).transform(map.displayProjection, map.projection), 5);
         
 	$('#interload').submit(function() {
 	   $.getJSON($('#interurl').val(), function(data){
@@ -71,7 +71,10 @@
  
         $('#debug').submit( function () {
             bounds = map.getExtent().transform(map.projection, map.displayProjection);
-	    alert(bounds.toBBOX());
+            $.getJSON('/airspace/json/bbox/' + bounds.toBBOX(), 
+                      function(data) {
+	                   OpenLayers.Util.getElement("zone_count").innerHTML = data;
+                      });
             return false;
         });
 
