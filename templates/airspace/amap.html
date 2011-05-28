@@ -73,7 +73,7 @@
             bounds = map.getExtent().transform(map.projection, map.displayProjection);
             $.getJSON('/airspace/json/bbox/' + bounds.toBBOX(), 
                       function(data) {
-	                   OpenLayers.Util.getElement("zone_count").innerHTML = data;
+	                   displaySingleAirspace(map, data);
                       });
             return false;
         });
