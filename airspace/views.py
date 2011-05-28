@@ -21,7 +21,7 @@ def json_zone_bbox(request, lowlat, lowlon, highlat, highlon):
     spaces = AirSpaces.objects.filter(geom__bboverlaps=zone_bbox)
     js_spaces = geojson.FeatureCollection(list(spaces))
 
-    return HttpResponse(len(z), mimetype='application/json')
+    return HttpResponse(geojson.dumps(js_spaces), mimetype='application/json')
 
 
 def amap(request):
