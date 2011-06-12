@@ -18,6 +18,7 @@ urlpatterns = patterns('',
     )),
     url(r'^airspace/json/(?P<zone_id>\d+)$', 'airspace.views.json_zone'),
     url(r'^airspace/json/bbox/(?P<lowlat>-?[\d\.]+),(?P<lowlon>-?[\d\.]+),(?P<highlat>-?[\d\.]+),(?P<highlon>-?[\d\.]+)$', 'airspace.views.json_zone_bbox'),
+    url(r'^airspace/json/bbox/id/(?P<lowlat>-?[\d\.]+),(?P<lowlon>-?[\d\.]+),(?P<highlat>-?[\d\.]+),(?P<highlon>-?[\d\.]+)$', 'airspace.views.jsonID_zone_bbox'),
     # Uncomment the admin/doc line below to enable admin documentation:
     # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
     url(r'^airspace/amap/', 'airspace.views.amap'),

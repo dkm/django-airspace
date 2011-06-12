@@ -3,6 +3,8 @@ from airspace.models import AirSpaces
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 
+from django.core import serializers
+
 from django.contrib.gis.geos import Polygon
 import geojson
 
@@ -22,6 +24,14 @@ def json_zone_bbox(request, lowlat, lowlon, highlat, highlon):
     js_spaces = geojson.FeatureCollection(list(spaces))
 
     return HttpResponse(geojson.dumps(js_spaces), mimetype='application/json')
+
+def jsonID_zone_bbox(request, lowlat, lowlon, highlat, highlon):
+    zone_bbox = Polygon(((float(lowlat),float(lowlon)), (float(lowlat), float(highlon)), (float(highlat), float(highlon)), (float(highlat), float(lowlon)), (float(lowlat), float(lowlon))))
+    spaces = AirSpaces.objects.filter(geom__bboverlaps=zone_bbox)
+
+    data = serializers.serialize('json', spaces, fields=[])
+    print data
+    return HttpResponse(data, mimetype='application/json')
 
 
 def amap(request):

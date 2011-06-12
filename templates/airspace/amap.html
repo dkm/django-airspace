@@ -12,6 +12,8 @@
 </head> 
   <body> 
         <form id="debug"><input type="submit" name"debug"/> </form>
+        <form id="debug2"><input type="submit" name"debug"/> </form>
+
 	<div id="coords"></div> <field><label>Zone Count</label><div id="zone_count"></div></field>
 
         <div id="map" class="smallmap"></div> 
@@ -37,6 +39,13 @@
                         displayProjection: new OpenLayers.Projection("EPSG:4326")
 	});
  
+        // projection here is useless as it is applied only on objects created by the library.
+        // here, we are creating the objects and then using the addFeature().
+	var vectors = new OpenLayers.Layer.Vector("space", {
+	        projection: new OpenLayers.Projection("EPSG:4326")
+	});
+	map.addLayers([vectors]);
+
 //        var wms = new OpenLayers.Layer.WMS( "OpenLayers WMS",
 //            "http://vmap0.tiles.osgeo.org/wms/vmap0", {layers: 'basic'} );
  
@@ -73,7 +82,20 @@
             bounds = map.getExtent().transform(map.projection, map.displayProjection);
             $.getJSON('/airspace/json/bbox/' + bounds.toBBOX(), 
                       function(data) {
-	                   displaySingleAirspace(map, data);
+	                   displaySingleAirspace(map, vectors, data);
+                      });
+            return false;
+        });
+
+        $('#debug2').submit( function () {
+            bounds = map.getExtent().transform(map.projection, map.displayProjection);
+            $.getJSON('/airspace/json/bbox/id/' + bounds.toBBOX(), 
+                      function(data) {
+                           var i = new Array();
+	                   $.each(data, function(index){
+                               i.push(data[index]['pk']);
+                           });
+                           alert(i);
                       });
             return false;
         });

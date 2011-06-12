@@ -18,29 +18,22 @@
 var geojsonloader = new OpenLayers.Format.GeoJSON();
 var inter_vectors = new OpenLayers.Layer.Vector("INTERSECTION");
 
-
 function displayIntersection(map, intersection) {
   var features = geojsonloader.read(intersection);
   inter_vectors.addFeatures(features);
   map.addLayers([inter_vectors]);
 }
 
-function displaySingleAirspace(map, aspace_gjson){
+function displaySingleAirspace(map, vectors, aspace_gjson){
     var geojsonloader = new OpenLayers.Format.GeoJSON({
 	'internalProjection': new OpenLayers.Projection("EPSG:900913"),
 	'externalProjection': new OpenLayers.Projection("EPSG:4326")
     });
 
     var features = geojsonloader.read(aspace_gjson);
-    
-    // projection here is useless as it is applied only on objects created by the library.
-    // here, we are creating the objects and then using the addFeature().
-    var vectors = new OpenLayers.Layer.Vector("space", {
-	projection: new OpenLayers.Projection("EPSG:4326")
-    });
 
     vectors.addFeatures(features);
-    map.addLayers([vectors]);
+
 }
 
 function displayAirspace(map, aspaces){
