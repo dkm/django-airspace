@@ -18,6 +18,21 @@ def json_zone(request, zone_id):
         raise Http404
     return HttpResponse(s, mimetype='application/json')
 
+def json_zones(request, zone_ids):
+    try:
+        zs = zone_ids.split(',')
+        spaces = []
+        for zid in zs:
+            z = AirSpaces.objects.get(pk=zid)
+            spaces.append(z)
+
+        js_spaces = geojson.FeatureCollection(spaces)
+        s = geojson.dumps(js_spaces)
+
+    except AirSpaces.DoesNotExist:
+        raise Http404
+    return HttpResponse(s, mimetype='application/json')
+
 def json_zone_bbox(request, lowlat, lowlon, highlat, highlon):
     zone_bbox = Polygon(((float(lowlat),float(lowlon)), (float(lowlat), float(highlon)), (float(highlat), float(highlon)), (float(highlat), float(lowlon)), (float(lowlat), float(lowlon))))
     spaces = AirSpaces.objects.filter(geom__bboverlaps=zone_bbox)
@@ -30,7 +45,7 @@ def jsonID_zone_bbox(request, lowlat, lowlon, highlat, highlon):
     spaces = AirSpaces.objects.filter(geom__bboverlaps=zone_bbox)
 
     data = serializers.serialize('json', spaces, fields=[])
-    print data
+
     return HttpResponse(data, mimetype='application/json')
 
 

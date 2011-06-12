@@ -15,8 +15,14 @@
  //   You should have received a copy of the GNU General Public License
  //   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-var geojsonloader = new OpenLayers.Format.GeoJSON();
 var inter_vectors = new OpenLayers.Layer.Vector("INTERSECTION");
+
+var geojsonloader = new OpenLayers.Format.GeoJSON({
+    'internalProjection': new OpenLayers.Projection("EPSG:900913"),
+    'externalProjection': new OpenLayers.Projection("EPSG:4326")
+});
+
+var displayed = {};
 
 function displayIntersection(map, intersection) {
   var features = geojsonloader.read(intersection);
@@ -24,16 +30,44 @@ function displayIntersection(map, intersection) {
   map.addLayers([inter_vectors]);
 }
 
-function displaySingleAirspace(map, vectors, aspace_gjson){
-    var geojsonloader = new OpenLayers.Format.GeoJSON({
-	'internalProjection': new OpenLayers.Projection("EPSG:900913"),
-	'externalProjection': new OpenLayers.Projection("EPSG:4326")
+function displayAirspaces(vectors, aspace_gjson){
+    var features = geojsonloader.read(aspace_gjson);
+    vectors.addFeatures(features);
+}
+
+function getAndDisplay(vectors, space_list){
+
+    var to_display = {};
+    var already_displayed = {};
+    var to_get = {};
+    var to_get_s = undefined;
+
+    $.each(space_list, function(idx) {
+	var pk = space_list[idx];
+	to_display[pk] = true;
+	if (displayed[pk]){
+	    already_displayed[pk] = true;
+	} else {
+	    to_get[pk] = true;
+	    if (to_get_s == undefined)
+		to_get_s = pk;
+	    else
+		to_get_s = to_get_s + "," + pk;
+	}
     });
 
-    var features = geojsonloader.read(aspace_gjson);
+    $.each(displayed, function(k,p){
+	if (!already_displayed[k]){
+	    delete displayed[k];
+	}
+    });
 
-    vectors.addFeatures(features);
+    $.getJSON('/airspace/json/' + to_get_s, 
+              function(data) {
+	          displayAirspaces(vectors, data);
+    });
 
+    displayed = to_display;
 }
 
 function displayAirspace(map, aspaces){

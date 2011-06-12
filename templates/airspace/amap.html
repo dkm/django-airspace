@@ -40,7 +40,7 @@
 	});
  
         // projection here is useless as it is applied only on objects created by the library.
-        // here, we are creating the objects and then using the addFeature().
+         // here, we are creating the objects and then using the addFeature().
 	var vectors = new OpenLayers.Layer.Vector("space", {
 	        projection: new OpenLayers.Projection("EPSG:4326")
 	});
@@ -82,7 +82,7 @@
             bounds = map.getExtent().transform(map.projection, map.displayProjection);
             $.getJSON('/airspace/json/bbox/' + bounds.toBBOX(), 
                       function(data) {
-	                   displaySingleAirspace(map, vectors, data);
+	                   displayAirspaces(map, vectors, data);
                       });
             return false;
         });
@@ -95,7 +95,7 @@
 	                   $.each(data, function(index){
                                i.push(data[index]['pk']);
                            });
-                           alert(i);
+	                   getAndDisplay(vectors, i);
                       });
             return false;
         });
