@@ -62,12 +62,25 @@ function getAndDisplay(vectors, space_list){
 	}
     });
 
-    $.getJSON('/airspace/json/' + to_get_s, 
-              function(data) {
-	          displayAirspaces(vectors, data);
-    });
+    cleanDisplayed(vectors, to_display);
 
+    if (to_get_s != undefined ){
+	$.getJSON('/airspace/json/' + to_get_s, 
+		  function(data) {
+	              displayAirspaces(vectors, data);
+		  });
+    }
     displayed = to_display;
+}
+
+function cleanDisplayed(vectors, to_display) {
+    var to_remove = [];
+    $.each(vectors.features, function(idx){
+	if (to_display[vectors.features[idx]['fid']] == undefined){
+	    to_remove.push(vectors.features[idx]);
+	}
+    });
+    vectors.destroyFeatures(to_remove);
 }
 
 function displayAirspace(map, aspaces){
