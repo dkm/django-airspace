@@ -18,6 +18,7 @@ class AirSpaces(models.Model):
     @property
     def __geo_interface__(self):
         f = {'type': 'Feature',
+             'id' : self.id,
              'properties': {'id':self.id}, 
              'geometry': geojson.loads(self.geom.json)}
 
