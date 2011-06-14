@@ -1,0 +1,21 @@
+django-airspace is my first django application. It is also my first real GIS application => there may be some newbie errors :)
+
+It is intended to handle airspaces, in particular for paraglider/hangglider pilots, but it may be useful for others kinds of pilots.
+
+The short goal is to be able to display/search airspaces from a webpage. It should also be possible to upload a flight track and
+check that it complying with the rules :D
+
+The application is build so that it can be used from other software/webpage:
+ - json interface to query the database (from an android app for example)
+ - display zone as overlays in others GIS webpage
+
+As a futur goal, anything is possible. But the more likely features that would come:
+ - map generation (using mapnik) with openstreetmap base layer. Useful for clubs, competition, events, ...
+ - ... ?
+ - export data as OpenAIR, kml, shp, ... ?
+ - be able to inject data more easily (currently using my OpenAIR to Shapefile converter)
+ - take airspaces from outside france
+ - versioning of spaces. Airspaces are changing very frequently and keeping only one version is not possible (validating a flight from 2 weeks ago does not make sense for example as you don't know what were the zones at that time)
+
+It could also be possible to handle something else than airspaces (thermals map ? Then it could be possible to query a thermal database during a flight).
+
