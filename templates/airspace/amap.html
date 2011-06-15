@@ -12,10 +12,13 @@
 </head> 
   <body> 
         <form id="debug"><input type="submit" name"debug"/> </form>
-        <form id="debug2"><input type="submit" name"debug"/> </form>
+
+        <form id="debug2">
+	  <input type="submit" name"debug"/>
+	  <div id="spinner-ajax-load"></div>
+	</form>
 
 	<div id="coords"></div> <field><label>Zone Count</label><div id="zone_count"></div></field>
-
         <div id="map" class="smallmap"></div> 
 	<div id="highlighted"></div> 
 	<div id="info"></div> 
@@ -33,7 +36,8 @@
 	</form> 
  
 	<script defer="defer" type="text/javascript"> 
-
+	$('#spinner-ajax-load').hide();
+	$('#spinner-ajax-load').html('<img src="{{ STATIC_URL }}img/ajax-loader.gif"/>');
         var map = new OpenLayers.Map('map', {
 	                projection: new OpenLayers.Projection("EPSG:900913"),
                         displayProjection: new OpenLayers.Projection("EPSG:4326")
@@ -88,6 +92,7 @@
         });
 
         $('#debug2').submit( function () {
+	    $('#spinner-ajax-load').show();
             bounds = map.getExtent().transform(map.projection, map.displayProjection);
             $.getJSON('/airspace/json/bbox/id/' + bounds.toBBOX(), 
                       function(data) {

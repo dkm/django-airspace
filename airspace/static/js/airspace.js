@@ -68,9 +68,14 @@ function getAndDisplay(vectors, space_list){
 	$.getJSON('/airspace/json/' + to_get_s, 
 		  function(data) {
 	              displayAirspaces(vectors, data);
+		      $('#spinner-ajax-load').hide();
 		  });
+    } else {
+	$('#spinner-ajax-load').hide();
     }
+
     displayed = to_display;
+    $('#zone_count').html(Object.keys(displayed).length);
 }
 
 function cleanDisplayed(vectors, to_display) {
