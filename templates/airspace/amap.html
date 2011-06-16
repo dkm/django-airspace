@@ -23,17 +23,11 @@
 	<div id="highlighted"></div> 
 	<div id="info"></div> 
 
-	<ul>
-          {% for as in as_list %}
-          <li><a href="#" onclick='loadAS({{ as.id }});'>{{ as.name }}</a></li>
-          {% endfor %}
-	</ul>
-
-
-	<form id="interload"> 
-	  Inter: <input type="text" id="interurl" name="interurl" /> <br /> 
-	  <input type="submit" name="load" /> 
-	</form> 
+	<div id="zone-info"> </div>
+	<!-- <form id="interload">  -->
+	<!--   Inter: <input type="text" id="interurl" name="interurl" /> <br />  -->
+	<!--   <input type="submit" name="load" />  -->
+	<!-- </form>  -->
  
 	<script defer="defer" type="text/javascript"> 
 	$('#spinner-ajax-load').hide();
@@ -44,7 +38,7 @@
 	});
  
         // projection here is useless as it is applied only on objects created by the library.
-         // here, we are creating the objects and then using the addFeature().
+        // here, we are creating the objects and then using the addFeature().
 	var vectors = new OpenLayers.Layer.Vector("space", {
 	        projection: new OpenLayers.Projection("EPSG:4326")
 	});
@@ -62,9 +56,26 @@
 
 	var layer_switcher = new OpenLayers.Control.LayerSwitcher();
 	map.addControl(layer_switcher);
-        layer_switcher.activate();
+
+
+	 var highlightCtrl = new OpenLayers.Control.SelectFeature(vectors, {
+                hover: true,
+                highlightOnly: true,
+                renderIntent: "temporary",
+            });
+	map.addControl(highlightCtrl);
+
+	var selectCtrl = new OpenLayers.Control.SelectFeature(vectors,
+                {clickout: true,
+	         onSelect: displayZoneInfo}
+            );
+	map.addControl(selectCtrl);
 
         map.addControl(new OpenLayers.Control.MousePosition());
+
+        highlightCtrl.activate();
+        layer_switcher.activate();
+	selectCtrl.activate();
 
 	map.events.register("mousemove", map, function(e) { 
                 var position = this.events.getMousePosition(e);

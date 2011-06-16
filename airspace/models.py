@@ -19,7 +19,11 @@ class AirSpaces(models.Model):
     def __geo_interface__(self):
         f = {'type': 'Feature',
              'id' : self.id,
-             'properties': {'id':self.id}, 
+             'properties': {'id':self.id,
+                            'name': self.name,
+                            'class': self.clazz,
+                            'ceiling': geojson.loads(self.ceiling),
+                            'floor': geojson.loads(self.floor)}, 
              'geometry': geojson.loads(self.geom.json)}
 
         return f

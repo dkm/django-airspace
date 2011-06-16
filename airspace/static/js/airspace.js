@@ -24,6 +24,16 @@ var geojsonloader = new OpenLayers.Format.GeoJSON({
 
 var displayed = {};
 
+function displayZoneInfo(feature) {
+    var info = '<fieldset><legend>' +feature.attributes['name'] + '</legend>';
+    info += '<ul>';
+    info += '<li>Class: ' + feature.attributes['class'] + '</li>';
+    info += '<li>Floor spec: ' + feature.attributes['ceiling'] + '</li>';
+    info += '<li>Ceiling spec: ' + feature.attributes['floor'] + '</li>';
+    info += '</li></fieldset>';
+    $('#zone-info').html(info);
+}
+
 function displayIntersection(map, intersection) {
   var features = geojsonloader.read(intersection);
   inter_vectors.addFeatures(features);
