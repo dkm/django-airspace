@@ -17,10 +17,54 @@
 
 var inter_vectors = new OpenLayers.Layer.Vector("INTERSECTION");
 
+
+/*
+ * Define style for displaying Airspaces.
+ */
+
+var renderer = OpenLayers.Util.getParameters(window.location.href).renderer;
+renderer = (renderer) ? [renderer] : OpenLayers.Layer.Vector.prototype.renderers;
+ 
+var styleMap = new OpenLayers.StyleMap({
+     default: {
+         pointRadius: "${type}", // based on feature.attributes.type
+         fillColor: "#ee9900",
+	 fillOpacity: "0.4"
+     },
+    select : {
+        pointRadius: "${type}", // based on feature.attributes.type
+        fillColor: "#ee9900",
+	fillOpacity: "0.1"
+    }, 
+});
+
+var classStyleLookup = {
+    "A"  : {fillColor: "#ee9900"},
+    "CTR": {fillColor: "#f6072f"},
+    "P"  : {fillColor: "#ff0000"},
+    "Q"  : {fillColor: "#ee9900"},
+    "E"  : {fillColor: "#00ff00"},
+    "C"  : {fillColor: "#ee8800"},
+    "D"  : {fillColor: "#ee7700"},
+    "W"  : {fillColor: "#ee6600"},
+    "R"  : {fillColor: "#ee5500"},
+    "GP" : {fillColor: "#ee4400"},
+};
+styleMap.addUniqueValueRules("default", "class", classStyleLookup);
+
+
+/*
+ * How to load GeoJSON data for our map.
+ */
 var geojsonloader = new OpenLayers.Format.GeoJSON({
     'internalProjection': new OpenLayers.Projection("EPSG:900913"),
     'externalProjection': new OpenLayers.Projection("EPSG:4326")
 });
+
+
+/*
+ * Below, we have only internal hacks :)
+ */
 
 var displayed = {};
 

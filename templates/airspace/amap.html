@@ -36,12 +36,16 @@
 	                projection: new OpenLayers.Projection("EPSG:900913"),
                         displayProjection: new OpenLayers.Projection("EPSG:4326")
 	});
- 
+
+
         // projection here is useless as it is applied only on objects created by the library.
         // here, we are creating the objects and then using the addFeature().
 	var vectors = new OpenLayers.Layer.Vector("space", {
-	        projection: new OpenLayers.Projection("EPSG:4326")
+	        projection: new OpenLayers.Projection("EPSG:4326"),
+                styleMap: styleMap,
+               renderers: renderer
 	});
+
 	map.addLayers([vectors]);
 
 //        var wms = new OpenLayers.Layer.WMS( "OpenLayers WMS",
@@ -52,13 +56,10 @@
  
         map.addLayers([osm]);
  
-	/* displayAirspace(map, spaces); */
-
 	var layer_switcher = new OpenLayers.Control.LayerSwitcher();
 	map.addControl(layer_switcher);
 
-
-	 var highlightCtrl = new OpenLayers.Control.SelectFeature(vectors, {
+        var highlightCtrl = new OpenLayers.Control.SelectFeature(vectors, {
                 hover: true,
                 highlightOnly: true,
                 renderIntent: "temporary",
