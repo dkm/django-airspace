@@ -11,11 +11,15 @@
  
 </head> 
   <body> 
-        <form id="debug"><input type="submit" name"debug"/> </form>
+        <!-- <form id="debug"><input type="submit" name"debug"/> </form> -->
+	<div id="spinner-ajax-load"></div>
+	<form id="selected-airspace-form">
+	  Enable drawing: <input type="checkbox" id="enable-drawing" />
+	  <input type="submit" name="selected-airspace" value="Update Airspace in selected zone"/>
+	</form>
 
         <form id="debug2">
-	  <input type="submit" name"debug"/>
-	  <div id="spinner-ajax-load"></div>
+	  <input type="submit" name="debug" value="Update Visible Airspace"/>
 	</form>
 
 	<div id="coords"></div> <field><label>Zone Count</label><div id="zone_count"></div></field>
@@ -45,7 +49,6 @@
                 styleMap: styleMap,
                renderers: renderer
 	});
-
 	map.addLayers([vectors]);
 
 //        var wms = new OpenLayers.Layer.WMS( "OpenLayers WMS",
@@ -108,6 +111,51 @@
         $('#debug2').submit( function () {
 	    $('#spinner-ajax-load').show();
             bounds = map.getExtent().transform(map.projection, map.displayProjection);
+            $.getJSON('/airspace/json/bbox/id/' + bounds.toBBOX(), 
+                      function(data) {
+                           var i = new Array();
+	                   $.each(data, function(index){
+                               i.push(data[index]['pk']);
+                           });
+	                   getAndDisplay(vectors, i);
+                      });
+            return false;
+        });
+
+        var control = new OpenLayers.Control();
+	OpenLayers.Util.extend(control, {
+                    draw: function () {
+                        // this Handler.Box will intercept the shift-mousedown
+                        // before Control.MouseDefault gets to see it
+                        this.box = new OpenLayers.Handler.Box( control,
+                            {"done": this.notice},
+                            {keyMask: OpenLayers.Handler.MOD_SHIFT});
+                        this.box.activate();
+                    },
+ 
+                    notice: function (bounds) {
+                        var proj_bounds = new OpenLayers.Bounds();
+                        proj_bounds.extend(map.getLonLatFromPixel(new OpenLayers.Pixel(bounds.left, bounds.bottom)));
+	                proj_bounds.extend(map.getLonLatFromPixel(new OpenLayers.Pixel(bounds.right, bounds.top)));
+                        proj_bounds.transform(map.projection, map.displayProjection);
+
+                        $('#spinner-ajax-load').show();
+                        $.getJSON('/airspace/json/bbox/id/' + proj_bounds.toBBOX(), 
+                              function(data) {
+                                 var i = new Array();
+                                 $.each(data, function(index){
+                                     i.push(data[index]['pk']);
+                                 });
+	                         getAndDisplay(vectors, i);
+                        });
+                    }
+                });
+                map.addControl(control);
+
+       $('#selected-airspace-form').submit( function () {
+	    $('#spinner-ajax-load').show();
+            bounds = overlay_vectors.features[0];
+
             $.getJSON('/airspace/json/bbox/id/' + bounds.toBBOX(), 
                       function(data) {
                            var i = new Array();
