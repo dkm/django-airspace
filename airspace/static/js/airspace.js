@@ -26,15 +26,9 @@ var renderer = OpenLayers.Util.getParameters(window.location.href).renderer;
 renderer = (renderer) ? [renderer] : OpenLayers.Layer.Vector.prototype.renderers;
  
 var styleMap = new OpenLayers.StyleMap({
-     default: {
-         pointRadius: "${type}", // based on feature.attributes.type
-         fillColor: "#ee9900",
-	 fillOpacity: "0.4"
-     },
     select : {
-        pointRadius: "${type}", // based on feature.attributes.type
-        fillColor: "#ee9900",
-	fillOpacity: "0.1"
+        fillColor: "#ff0000",
+	fillOpacity: "0.7"
     }, 
 });
 
@@ -76,6 +70,10 @@ function displayZoneInfo(feature) {
     info += '<li>Ceiling spec: ' + feature.attributes['floor'] + '</li>';
     info += '</li></fieldset>';
     $('#zone-info').html(info);
+}
+
+function clearZoneInfo(feature) {
+    $('#zone-info').html("");
 }
 
 function displayIntersection(map, intersection) {

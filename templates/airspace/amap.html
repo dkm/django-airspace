@@ -68,7 +68,9 @@
 
 	var selectCtrl = new OpenLayers.Control.SelectFeature(vectors,
                 {clickout: true,
-	         onSelect: displayZoneInfo}
+	         onSelect: displayZoneInfo,
+                 onUnselect: clearZoneInfo,
+	        }
             );
 	map.addControl(selectCtrl);
 
