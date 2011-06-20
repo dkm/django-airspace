@@ -35,7 +35,7 @@
  
 	<script defer="defer" type="text/javascript"> 
 	$('#spinner-ajax-load').hide();
-	$('#spinner-ajax-load').html('<img src="{{ STATIC_URL }}img/ajax-loader.gif"/>');
+	$('#spinner-ajax-load').html('<img src="{{ STATIC_URL }}img/ajax-loader.gif"/> Loading data from remote server...');
         var map = new OpenLayers.Map('map', {
 	                projection: new OpenLayers.Projection("EPSG:900913"),
                         displayProjection: new OpenLayers.Projection("EPSG:4326")
@@ -88,7 +88,8 @@
                 OpenLayers.Util.getElement("coords").innerHTML = position;
         });
 
-        map.setCenter(new OpenLayers.LonLat(1, 1).transform(map.displayProjection, map.projection), 5);
+        // center on Grenoble. Easier for debug :)
+        map.setCenter(new OpenLayers.LonLat(5.72, 45.18).transform(map.displayProjection, map.projection), 10);
         
 	$('#interload').submit(function() {
 	   $.getJSON($('#interurl').val(), function(data){
