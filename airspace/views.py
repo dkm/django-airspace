@@ -15,6 +15,8 @@ from django.http import Http404
 ##
 # get a FeatureCollection out of a list of zone id
 # Can be via GET or POST
+
+# disable csrf protection 
 @csrf_exempt
 def json_zone_post(request):
     args = request.POST
@@ -24,7 +26,6 @@ def json_zone_post(request):
 def json_zones(request, zone_ids):
     zs = zone_ids.split(',')
     return internal_json_zones(zs)
-
 
 def internal_json_zones(zone_list):
     try:
@@ -40,8 +41,21 @@ def internal_json_zones(zone_list):
         raise Http404
     
     return HttpResponse(s, mimetype='application/json')
-    
 
+
+def json_zones_by_name(request, name):
+    try:
+        zones = AirSpaces.objects.filter(name__icontains=name)
+
+        data = serializers.serialize('json', zones, fields=[])
+        return HttpResponse(data, mimetype='application/json')
+
+        # js_spaces = geojson.FeatureCollection(list(zones))
+        # s = geojson.dumps(js_spaces)
+        # return HttpResponse(s, mimetype='application/json')
+    except AirSpaces.DoesNotExist:
+        raise Http404
+    
 def json_zone(request, zone_id):
     try:
         z = AirSpaces.objects.get(pk=zone_id)

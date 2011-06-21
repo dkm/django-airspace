@@ -13,9 +13,9 @@
   <body> 
         <!-- <form id="debug"><input type="submit" name"debug"/> </form> -->
 	<div id="spinner-ajax-load"></div>
-	<form id="selected-airspace-form">
-	  Enable drawing: <input type="checkbox" id="enable-drawing" />
-	  <input type="submit" name="selected-airspace" value="Update Airspace in selected zone"/>
+	<form id="name-query">
+	  <input type="text" id="name-query-id" name="name-query-search" />
+	  <input type="submit" name="name-query" value="Find Airspace"/>
 	</form>
 
         <form id="debug2">
@@ -100,11 +100,15 @@
 	   return false;
 	});
  
-        $('#debug').submit( function () {
-            bounds = map.getExtent().transform(map.projection, map.displayProjection);
-            $.getJSON('/airspace/json/bbox/' + bounds.toBBOX(), 
+        $('#name-query').submit( function () {
+	
+            $.getJSON('/airspace/json/name/' + $('#name-query-id').val(), 
                       function(data) {
-	                   displayAirspaces(map, vectors, data);
+                           var i = new Array();
+	                   $.each(data, function(index){
+                               i.push(data[index]['pk']);
+                           });
+	                   getAndDisplay(vectors, i);
                       });
             return false;
         });
