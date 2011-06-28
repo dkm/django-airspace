@@ -16,6 +16,9 @@ urlpatterns = patterns('',
     url(r'^airspace/$', ListView.as_view(
         model=AirSpaces,
     )),
+
+    url(r'^airspace/json/trackup$', 'airspace.views.json_track_upload'),
+                       
     url(r'^airspace/json/(?P<zone_id>\d+)$', 'airspace.views.json_zone'),
     url(r'^airspace/json/$', 'airspace.views.json_zone_post'),
     url(r'^airspace/json/name/(?P<name>.*)$', 'airspace.views.json_zones_by_name'),

@@ -4,10 +4,12 @@
     <script src="{{ STATIC_URL }}OpenLayers.js"></script> 
     <script src="{{ STATIC_URL }}js/airspace.js"></script> 
     <script src="{{ STATIC_URL }}js/jquery-1.5.1.js"></script> 
+    <script src="{{ STATIC_URL }}js/file-upload/fileuploader.js"></script> 
 
  
     <link rel="stylesheet" href="{{ STATIC_URL }}style2.css" type="text/css"> 
     <link rel="stylesheet" href="{{STATIC_URL }}style.css" type="text/css"> 
+    <link rel="stylesheet" href="{{STATIC_URL }}js/file-upload/fileuploader.css" type="text/css"> 
  
 </head> 
   <body> 
@@ -21,6 +23,20 @@
         <form id="debug2">
 	  <input type="submit" name="debug" value="Update Visible Airspace"/>
 	</form>
+
+	<div id="file-uploader">       
+	  <noscript>          
+            <p>Please enable JavaScript to use file uploader.</p>
+            <!-- or put a simple form for upload here -->
+	  </noscript>
+	</div>
+
+	<!-- <form id="track-form"> -->
+	<!--   <fieldset> -->
+	<!--     <input type="file" name="track-file" /> -->
+	<!--     <input type="submit" value="Upload GPX track" /> -->
+	<!--   </fieldset> -->
+	<!-- </form> -->
 
 	<div id="coords"></div> <field><label>Zone Count</label><div id="zone_count"></div></field>
         <div id="map" class="smallmap"></div> 
@@ -109,6 +125,7 @@
                                i.push(data[index]['pk']);
                            });
 	                   getAndDisplay(vectors, i);
+
                       });
             return false;
         });
@@ -171,6 +188,37 @@
                       });
             return false;
         });
+
+        var uploader = new qq.FileUploader( {
+            action: "/airspace/json/trackup",
+            element: $('#file-uploader')[0],
+            multiple: false,
+            onSubmit : function( id, fileName) {
+               $('#spinner-ajax-load').show();
+            },
+            onComplete: function( id, fileName, responseJSON ) {
+	       getAndDisplay(vectors, responseJSON.ZID);
+            },
+            params: {
+               'csrf_token': '{{ csrf_token }}',
+               'csrf_name': 'csrfmiddlewaretoken',
+               'csrf_xname': 'X-CSRFToken',
+           },
+        } ) ;
+
+//	$('#track-form').submit( function () {
+//            $('#spinner-ajax-load').show();
+//            $.post('/airspace/json/intersect/id',
+//                {},
+//                function(data) {
+//                    var i = new Array();
+//                    $.each(data, function(index){
+//                        i.push(data[index]['pk']);
+//                    });
+//                    getAndDisplay(vectors, i);   
+//                });
+//	    return false;
+//	});
 
 	function loadAS(asid){
            $.getJSON('/airspace/json/' + asid, 
