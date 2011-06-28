@@ -197,7 +197,11 @@
                $('#spinner-ajax-load').show();
             },
             onComplete: function( id, fileName, responseJSON ) {
-	       getAndDisplay(vectors, responseJSON.ZID);
+               var i = new Array();
+               $.each(responseJSON.ZID, function(index){
+                   i.push(responseJSON.ZID[index]['pk']);
+               });
+               getAndDisplay(vectors, i);
             },
             params: {
                'csrf_token': '{{ csrf_token }}',

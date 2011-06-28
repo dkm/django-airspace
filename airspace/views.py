@@ -5,17 +5,89 @@ from django.template import RequestContext
 
 from django import forms
 
+
 from django.core import serializers
 from django.views.decorators.csrf import csrf_exempt
 
 from django.contrib.gis.geos import Polygon
 import geojson
+import json
 
 from django.middleware import csrf
 
 from django.http import Http404
 
 from django import forms
+
+import os.path
+import re
+import osgeo.ogr
+
+from django.contrib.gis.geos import GEOSGeometry
+    
+def loadFromGpx(gpxfilename, detectProjection=True):
+    """
+    From a GPX, loads all lines/multilines and returns
+    WKT representation
+    """
+    driver = osgeo.ogr.GetDriverByName('GPX')
+    dataSource = driver.Open(gpxfilename, 0)
+    geoms_to_return = []
+
+    for i in xrange(dataSource.GetLayerCount()):
+	layer = dataSource.GetLayer(i)
+	layer.ResetReading()
+	spatialRef = None
+	if detectProjection:
+            spatialRef = layer.GetSpatialRef()
+	# elif useProj4:
+	# 	spatialRef = osr.SpatialReference()
+	# 	spatialRef.ImportFromProj4(sourceProj4)
+
+            
+	if spatialRef == None:	
+            # No source proj specified yet? Then default to do no reprojection.
+            # Some python magic: skip reprojection
+            # altogether by using a dummy lamdba
+            # funcion. Otherwise, the lambda will
+            # be a call to the OGR reprojection
+            # stuff.
+            reproject = lambda(geometry): None
+	else:
+            destSpatialRef = osgeo.osr.SpatialReference()
+            destSpatialRef.ImportFromEPSG(4326)	
+            # Destionation projection will *always* be EPSG:4326,
+            # WGS84 lat-lon
+            coordTrans = osgeo.osr.CoordinateTransformation(spatialRef,destSpatialRef)
+            reproject = lambda(geometry): geometry.Transform(coordTrans)
+        featureDefinition = layer.GetLayerDefn()
+
+	for j in range(layer.GetFeatureCount()):
+            feature = layer.GetNextFeature()
+            geometry = feature.GetGeometryRef()
+            geometryType = geometry.GetGeometryType()
+            
+            ls = []
+
+            if  geometryType == osgeo.ogr.wkbLineString or geometryType == osgeo.ogr.wkbLineString25D:
+                if geometry.GetPointCount() <= 2:
+                    continue
+                ls.append(geometry)
+            elif geometryType == osgeo.ogr.wkbMultiLineString or geometryType == osgeo.ogr.wkbMultiLineString25D:
+                for i in xrange(geometry.GetGeometryCount()):
+                    subgeom = geometry.GetGeometryRef(i)
+                    if subgeom.GetPointCount() <= 2:
+                        continue
+                    else:
+                        ls.append(subgeom)
+                for line in ls:
+                    reproject(line)
+                    fout = open("toto", "w")
+                    print >>fout, line.ExportToWkt()
+                    fout.close()
+                    geoms_to_return.append(line.ExportToWkt())
+
+    return geoms_to_return
 
 ### from file-upload w/ django support
 ### Heavily based on code from http://kuhlit.blogspot.com/2011/04/ajax-file-uploads-and-csrf-in-django-13.html
@@ -47,7 +119,9 @@ def save_upload( uploaded, filename, raw_data ):
     # could not open the file most likely
     pass
   return False
- 
+
+## disable CSRF when debugging can help...
+##@csrf_exempt
 def json_track_upload( request ):
   if request.method == "POST":    
     if request.is_ajax( ):
@@ -72,24 +146,27 @@ def json_track_upload( request ):
         upload = request.FILES.values( )[ 0 ]
       else:
         raise Http404( "Bad Upload" )
-      filename = upload.name
+      filename = os.path.join("uploads", upload.name)
      
     # save the file
     success = save_upload( upload, filename, is_raw )
 
-    # interlist = ##Something that computes the intersections##
-    # for debug, simply take some zones around Grenoble to check the machinery :)
-    interlist = [47,48,278,281,287,288,289,295,296,307,308,313,607,
-                 894,895,963,964,966,1008,1011,1012,1113,1171,1187,1188,1189,1190,1191]
- 
-    # let Ajax Upload know whether we saved it or not
-    import json
-    ret_json = { 'success': success, 'ZID' : interlist }
-    return HttpResponse( json.dumps( ret_json ) )
+    track_geos = GEOSGeometry(loadFromGpx(str(filename))[0])
+   
+    spaces = AirSpaces.objects.filter(geom__intersects=track_geos)
+
+    data = serializers.serialize('json', spaces, fields=[])
+
+    # let Ajax Upload know whether we saved it or not by using success: smth
+    ##
+    ## FIXME this json.loads is not very clean. Serializing and deserializing right after... :(
+    ##
+    ret_json = { 'success': success, 'ZID' : json.loads(data) }
+    r = json.dumps( ret_json )
+    return HttpResponse(r, mimetype='application/json' )
 
 ### Heavily based on code from http://kuhlit.blogspot.com/2011/04/ajax-file-uploads-and-csrf-in-django-13.html
 ### end of file-upload w/ django support
-
 
 ##
 # get a FeatureCollection out of a list of zone id
