@@ -120,6 +120,19 @@ def save_upload( uploaded, filename, raw_data ):
     pass
   return False
 
+# this one can be used to get error when making an Ajax call...
+# def json_track_upload(request):
+#     try:
+#         return json_track_upload__(request)
+#     except:
+#         import traceback
+#         import sys
+#         exc_info = sys.exc_info()
+#         print "######################## Exception #############################"
+#         print '\n'.join(traceback.format_exception(*(exc_info or sys.exc_info())))
+#         print "################################################################"
+    
+
 ## disable CSRF when debugging can help...
 ##@csrf_exempt
 def json_track_upload( request ):
@@ -146,12 +159,16 @@ def json_track_upload( request ):
         upload = request.FILES.values( )[ 0 ]
       else:
         raise Http404( "Bad Upload" )
-      filename = os.path.join("uploads", upload.name)
-     
-    # save the file
-    success = save_upload( upload, filename, is_raw )
+      filename = upload.name
 
-    track_geos = GEOSGeometry(loadFromGpx(str(filename))[0])
+    dfilename = os.path.join("uploads", filename)
+    
+    # save the file
+    success = save_upload( upload, dfilename, is_raw )
+
+    ## the str() is needed to make a copy. If not, ogr Driver ctor
+    ## panics on the 'const char *' that it receives...
+    track_geos = GEOSGeometry(loadFromGpx(str(dfilename))[0])
    
     spaces = AirSpaces.objects.filter(geom__intersects=track_geos)
 
@@ -161,7 +178,13 @@ def json_track_upload( request ):
     ##
     ## FIXME this json.loads is not very clean. Serializing and deserializing right after... :(
     ##
-    ret_json = { 'success': success, 'ZID' : json.loads(data) }
+    ## use upload.name and not the filename as Django handles static files itself. We should
+    ## use some var to get the STATIC root instead of 'static/' !
+    
+    ret_json = { 'success': success,
+                 'ZID' : json.loads(data),
+                 'trackURL': '/static/' + filename }
+    
     r = json.dumps( ret_json )
     return HttpResponse(r, mimetype='application/json' )
 

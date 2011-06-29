@@ -56,7 +56,9 @@
 	                projection: new OpenLayers.Projection("EPSG:900913"),
                         displayProjection: new OpenLayers.Projection("EPSG:4326")
 	});
-
+	
+	// used to store uploaded tracks
+	var gpx_track_layer; 
 
         // projection here is useless as it is applied only on objects created by the library.
         // here, we are creating the objects and then using the addFeature().
@@ -201,7 +203,21 @@
                $.each(responseJSON.ZID, function(index){
                    i.push(responseJSON.ZID[index]['pk']);
                });
+
+               // display crossed zones
                getAndDisplay(vectors, i);
+
+               // display the track in a separate layer that gets
+               // reseted on every upload (should/could be changed...)
+               if (gpx_track_layer) {
+                 map.removeLayer(gpx_track_layer);
+               }
+               gpx_track_layer = new OpenLayers.Layer.GML(responseJSON.trackURL, responseJSON.trackURL, {
+                  format: OpenLayers.Format.GPX,
+                  style: {strokeColor: "red", strokeWidth: 5, strokeOpacity: 0.5},
+                  projection: new OpenLayers.Projection("EPSG:4326")
+	       });
+               map.addLayer(gpx_track_layer);
             },
             params: {
                'csrf_token': '{{ csrf_token }}',
@@ -209,20 +225,6 @@
                'csrf_xname': 'X-CSRFToken',
            },
         } ) ;
-
-//	$('#track-form').submit( function () {
-//            $('#spinner-ajax-load').show();
-//            $.post('/airspace/json/intersect/id',
-//                {},
-//                function(data) {
-//                    var i = new Array();
-//                    $.each(data, function(index){
-//                        i.push(data[index]['pk']);
-//                    });
-//                    getAndDisplay(vectors, i);   
-//                });
-//	    return false;
-//	});
 
 	function loadAS(asid){
            $.getJSON('/airspace/json/' + asid, 
