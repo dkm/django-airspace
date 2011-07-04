@@ -199,7 +199,9 @@ def json_track_upload( request ):
 @csrf_exempt
 def json_zone_post(request):
     args = request.POST
-    zones = args.getlist("ZID")
+    zones = []
+    for i in args.getlist("ZID"):
+        zones += i.split(',')
     return internal_json_zones(zones)
 
 def json_zones(request, zone_ids):

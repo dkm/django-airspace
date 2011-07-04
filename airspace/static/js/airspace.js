@@ -117,11 +117,12 @@ function getAndDisplay(vectors, space_list){
     cleanDisplayed(vectors, to_display);
 
     if (to_get_s != undefined ){
-	$.getJSON('/airspace/json/' + to_get_s, 
+	$.post('/airspace/json/', {'ZID': to_get_s},
 		  function(data) {
 	              displayAirspaces(vectors, data);
 		      $('#spinner-ajax-load').hide();
 		  });
+
     } else {
 	$('#spinner-ajax-load').hide();
     }
