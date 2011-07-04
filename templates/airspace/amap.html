@@ -199,6 +199,10 @@
                $('#spinner-ajax-load').show();
             },
             onComplete: function( id, fileName, responseJSON ) {
+               if (!responseJSON.success) {
+                   $('#spinner-ajax-load').hide();
+                   return;
+               }
                var i = new Array();
                $.each(responseJSON.ZID, function(index){
                    i.push(responseJSON.ZID[index]['pk']);
