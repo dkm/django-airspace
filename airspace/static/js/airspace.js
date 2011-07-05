@@ -117,12 +117,15 @@ function getAndDisplay(vectors, space_list){
     cleanDisplayed(vectors, to_display);
 
     if (to_get_s != undefined ){
-	$.post('/airspace/json/', {'ZID': to_get_s},
-		  function(data) {
-	              displayAirspaces(vectors, data);
-		      $('#spinner-ajax-load').hide();
-		  });
-
+	$.post('/airspace/json/', 
+	       {
+		   'ZID': to_get_s,
+		   'csrfmiddlewaretoken' : global_csrf_token,
+	       },
+	       function(data) {
+	           displayAirspaces(vectors, data);
+		   $('#spinner-ajax-load').hide();
+	       });
     } else {
 	$('#spinner-ajax-load').hide();
     }

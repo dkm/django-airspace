@@ -10,7 +10,16 @@
     <link rel="stylesheet" href="{{ STATIC_URL }}style2.css" type="text/css"> 
     <link rel="stylesheet" href="{{STATIC_URL }}style.css" type="text/css"> 
     <link rel="stylesheet" href="{{STATIC_URL }}js/file-upload/fileuploader.css" type="text/css"> 
- 
+
+    <!-- Not 100% convinced that this is a correct way to handle
+      -- CSRF with Ajax...
+      -- http://stackoverflow.com/questions/5407463/how-to-use-post-with-django 
+      -- seems to go this way... But still... Not 100% sure :)
+      -->
+    <script type="text/javascript">
+      var global_csrf_token = '{{ csrf_token }}';
+    </script>
+
 </head> 
   <body> 
         <!-- <form id="debug"><input type="submit" name"debug"/> </form> -->
@@ -224,7 +233,7 @@
                map.addLayer(gpx_track_layer);
             },
             params: {
-               'csrf_token': '{{ csrf_token }}',
+               'csrf_token': global_csrf_token,
                'csrf_name': 'csrfmiddlewaretoken',
                'csrf_xname': 'X-CSRFToken',
            },

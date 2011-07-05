@@ -133,7 +133,7 @@ def save_upload( uploaded, filename, raw_data ):
 ## disable CSRF when debugging can help...
 ##@csrf_exempt
 def json_track_upload( request ):
-  if request.method == "POST":    
+  if request.method == "POST":
     if request.is_ajax( ):
       # the file is stored raw in the request
       upload = request
@@ -193,7 +193,7 @@ def json_track_upload( request ):
 # Can be via GET or POST
 
 # disable csrf protection 
-@csrf_exempt
+#@csrf_exempt
 def json_zone_post(request):
     args = request.POST
     zones = []
