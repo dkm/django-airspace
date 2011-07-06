@@ -33,6 +33,10 @@
 	  <input type="submit" name="debug" value="Update Visible Airspace"/>
 	</form>
 
+	<form>
+	 Search radius in m for point selection (Shift+Ctrl click): <input type="text" id="radius-search" name="radius-search" value="5000" />
+	</form>
+
 	<div id="file-uploader">       
 	  <noscript>          
             <p>Please enable JavaScript to use file uploader.</p>
@@ -155,6 +159,7 @@
             return false;
         });
 
+	// for box selection
         var control = new OpenLayers.Control();
 	OpenLayers.Util.extend(control, {
                     draw: function () {
@@ -184,6 +189,34 @@
                     }
                 });
                 map.addControl(control);
+	
+	// for point selection
+	var pnt_control = new OpenLayers.Control();
+	OpenLayers.Util.extend(pnt_control, {
+                    draw: function () {
+                        // this Handler.Box will intercept the shift-mousedown
+                        // before Control.MouseDefault gets to see it
+                        this.point = new OpenLayers.Handler.Point( pnt_control,
+                            {"done": this.notice},
+                            {keyMask: OpenLayers.Handler.MOD_CTRL | OpenLayers.Handler.MOD_SHIFT});
+                        this.point.activate();
+                    },
+ 
+                    notice: function (point) {
+                        point.transform(map.projection, map.displayProjection);
+
+                        $('#spinner-ajax-load').show();
+                        $.getJSON('/airspace/json/point/id/' + point.x + ',' + point.y +',' + $('#radius-search').val(), 
+                              function(data) {
+                                 var i = new Array();
+                                 $.each(data, function(index){
+                                     i.push(data[index]['pk']);
+                                 });
+	                         getAndDisplay(vectors, i);
+                        });
+                    }
+                });
+        map.addControl(pnt_control);
 
        $('#selected-airspace-form').submit( function () {
 	    $('#spinner-ajax-load').show();
