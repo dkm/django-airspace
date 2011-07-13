@@ -1,9 +1,14 @@
 <html xmlns="http://www.w3.org/1999/xhtml"> 
   <head> 
     <title>Air Space map</title> 
-    <script src="{{ STATIC_URL }}OpenLayers.js"></script> 
-    <script src="{{ STATIC_URL }}js/airspace.js"></script> 
-    <script src="{{ STATIC_URL }}js/jquery-1.5.1.js"></script> 
+    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}OpenLayers.js"></script> 
+    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/airspace.js"></script> 
+
+    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery-1.5.1.js"></script>
+
+    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/flot/jquery.flot.js"></script>
+    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/flot/jquery.flot.crosshair.js"></script>
+
     <script src="{{ STATIC_URL }}js/file-upload/fileuploader.js"></script> 
 
  
@@ -56,6 +61,8 @@
 	<div id="highlighted"></div> 
 	<div id="info"></div> 
 
+        <div id="chart-placeholder" style="width:900px;height:150px;"></div>
+        <div id="chart-legend"></div>
 	<div id="zone-info"> </div>
 	<!-- <form id="interload">  -->
 	<!--   Inter: <input type="text" id="interurl" name="interurl" /> <br />  -->
@@ -278,6 +285,33 @@
 	                    displaySingleAirspace(map, data);
                      });
         };
+
+
+
+$(function () {
+    var track_points = [];
+
+    for (var i = 0; i < 14; i += 0.5)
+        track_points.push([i, Math.sin(i)]);
+
+   
+    $.plot($("#chart-placeholder"), [ track_points ], {
+                            series: {
+                                lines: { show: true }
+                            },
+                            crosshair: { mode: "x" },
+                            grid: { hoverable: true,
+                                    autoHighlight: false,
+                                    clickable : true},
+                            yaxis: { min: -1.2, max: 1.2 }
+                        });
+    });
+    $("#chart-placeholder").bind("plothover",  function (event, pos, item) {
+         $('#chart-legend').html("TOTO " + pos.x + "/" + pos.y);
+    });
+    $("#chart-placeholder").bind("plotclick",  function (event, pos, item) {
+             alert(pos.x + "/" + pos.y);
+    });
       </script> 
  </body> 
 </html> 
