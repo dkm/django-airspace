@@ -57,7 +57,7 @@
 	<!-- </form> -->
 
 	<div id="coords"></div> <field><label>Zone Count</label><div id="zone_count"></div></field>
-        <div id="map" class="smallmap"></div> 
+        <div id="map" class="smallmap"></div>
 	<div id="highlighted"></div> 
 	<div id="info"></div> 
 
@@ -74,7 +74,9 @@
 	$('#spinner-ajax-load').html('<img src="{{ STATIC_URL }}img/ajax-loader.gif"/> Loading data from remote server...');
         var map = new OpenLayers.Map('map', {
 	                projection: new OpenLayers.Projection("EPSG:900913"),
-                        displayProjection: new OpenLayers.Projection("EPSG:4326")
+                        displayProjection: new OpenLayers.Projection("EPSG:4326"),
+                        panMethod: OpenLayers.Easing.Quad.easeInOut,
+                        panDuration: 100
 	});
 	
 	// used to store uploaded tracks
@@ -265,12 +267,30 @@
                if (gpx_track_layer) {
                  map.removeLayer(gpx_track_layer);
                }
-               gpx_track_layer = new OpenLayers.Layer.GML(responseJSON.trackURL, responseJSON.trackURL, {
-                  format: OpenLayers.Format.GPX,
+
+              var gpx_track_data ;
+
+              jQuery.ajax({
+                  url: responseJSON.trackURL ,
+                  success: function(result) {
+                    gpx_track_data = result;                    
+                  },
+                  async:   false
+              });          
+
+	      gpx_track_layer = new OpenLayers.Layer.Vector("GPX track:" + responseJSON.trackURL , {
+	          projection: new OpenLayers.Projection("EPSG:4326"),
                   style: {strokeColor: "red", strokeWidth: 5, strokeOpacity: 0.5},
-                  projection: new OpenLayers.Projection("EPSG:4326")
-	       });
-               map.addLayer(gpx_track_layer);
+                  renderers: renderer
+	      });
+              var gpxloader = new OpenLayers.Format.GPX({
+                  'internalProjection': new OpenLayers.Projection("EPSG:900913"),
+                  'externalProjection': new OpenLayers.Projection("EPSG:4326")
+              });
+              var gpx_features = gpxloader.read(gpx_track_data);
+              gpx_track_layer.addFeatures(gpx_features);
+              map.addLayer(gpx_track_layer);
+
             },
             params: {
                'csrf_token': global_csrf_token,
