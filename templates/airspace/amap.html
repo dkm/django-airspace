@@ -81,6 +81,7 @@
 	
 	// used to store uploaded tracks
 	var gpx_track_layer; 
+        var gpx_marker_layer;
 
         // projection here is useless as it is applied only on objects created by the library.
         // here, we are creating the objects and then using the addFeature().
@@ -267,6 +268,9 @@
                if (gpx_track_layer) {
                  map.removeLayer(gpx_track_layer);
                }
+               if (gpx_marker_layer) {
+                 map.removeLayer(gpx_marker_layer);
+               }
 
               var gpx_track_data ;
 
@@ -290,6 +294,45 @@
               var gpx_features = gpxloader.read(gpx_track_data);
               gpx_track_layer.addFeatures(gpx_features);
               map.addLayer(gpx_track_layer);
+              center = gpx_features[0].geometry.getBounds().getCenterLonLat();
+	      map.panTo(center);
+
+
+        var SHADOW_Z_INDEX = 10;
+        var MARKER_Z_INDEX = 11;
+
+              // layer for marker
+              gpx_marker_layer = new OpenLayers.Layer.Vector(
+                "Marker",
+                {
+                    styleMap: new OpenLayers.StyleMap({
+                        // Set the external graphic and background graphic images.
+                        externalGraphic: "{{ STATIC_URL }}img/marker-gold.png",
+                        backgroundGraphic: "{{ STATIC_URL }}img/marker_shadow.png",
+                        
+                        // Makes sure the background graphic is placed correctly relative
+                        // to the external graphic.
+                        backgroundXOffset: 0,
+                        backgroundYOffset: -7,
+                        
+                        // Set the z-indexes of both graphics to make sure the background
+                        // graphics stay in the background (shadows on top of markers looks
+                        // odd; let's not do that).
+                        graphicZIndex: MARKER_Z_INDEX,
+                        backgroundGraphicZIndex: SHADOW_Z_INDEX,
+                        
+                        pointRadius: 10
+                    }),
+//                    isBaseLayer: true,
+                    rendererOptions: {yOrdering: true},
+                    renderers: renderer
+                }
+              );
+              var vert = gpx_features[0].geometry.getVertices()[10];
+
+	      var marker_feature = [new OpenLayers.Feature.Vector(vert)];
+	      gpx_marker_layer.addFeatures(marker_feature);
+              map.addLayer(gpx_marker_layer);
 
             },
             params: {
