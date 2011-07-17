@@ -144,7 +144,12 @@ OpenLayers.Format.GPX = OpenLayers.Class(OpenLayers.Format.XML, {
         var points = this.getElementsByTagNameNS(segment, segment.namespaceURI, segmentType);
         var point_features = [];
         for (var i = 0, len = points.length; i < len; i++) {
-            point_features.push(new OpenLayers.Geometry.Point(points[i].getAttribute("lon"), points[i].getAttribute("lat")));
+            var p = new OpenLayers.Geometry.Point(points[i].getAttribute("lon"), points[i].getAttribute("lat"));
+            var ele = points[i].getElementsByTagName("ele");
+            if (ele) {
+                p.z = parseFloat(ele[0].textContent);
+            }
+            point_features.push(p);
         }
         return new OpenLayers.Geometry.LineString(point_features);
     },
