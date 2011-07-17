@@ -1,7 +1,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml"> 
   <head> 
     <title>Air Space map</title> 
-    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}OpenLayers.js"></script> 
+    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}lib/OpenLayers.js"></script> 
     <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/airspace.js"></script> 
 
     <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery-1.5.1.js"></script>
@@ -23,6 +23,7 @@
       -->
     <script type="text/javascript">
       var global_csrf_token = '{{ csrf_token }}';
+      var static_root = '{{ STATIC_URL }}';
     </script>
 
 </head> 
@@ -79,10 +80,6 @@
                         panDuration: 100
 	});
 	
-	// used to store uploaded tracks
-	var gpx_track_layer; 
-        var gpx_marker_layer;
-
         // projection here is useless as it is applied only on objects created by the library.
         // here, we are creating the objects and then using the addFeature().
 	var vectors = new OpenLayers.Layer.Vector("space", {
@@ -263,77 +260,7 @@
                // display crossed zones
                getAndDisplay(vectors, i);
 
-               // display the track in a separate layer that gets
-               // reseted on every upload (should/could be changed...)
-               if (gpx_track_layer) {
-                 map.removeLayer(gpx_track_layer);
-               }
-               if (gpx_marker_layer) {
-                 map.removeLayer(gpx_marker_layer);
-               }
-
-              var gpx_track_data ;
-
-              jQuery.ajax({
-                  url: responseJSON.trackURL ,
-                  success: function(result) {
-                    gpx_track_data = result;                    
-                  },
-                  async:   false
-              });          
-
-	      gpx_track_layer = new OpenLayers.Layer.Vector("GPX track:" + responseJSON.trackURL , {
-	          projection: new OpenLayers.Projection("EPSG:4326"),
-                  style: {strokeColor: "red", strokeWidth: 5, strokeOpacity: 0.5},
-                  renderers: renderer
-	      });
-              var gpxloader = new OpenLayers.Format.GPX({
-                  'internalProjection': new OpenLayers.Projection("EPSG:900913"),
-                  'externalProjection': new OpenLayers.Projection("EPSG:4326")
-              });
-              var gpx_features = gpxloader.read(gpx_track_data);
-              gpx_track_layer.addFeatures(gpx_features);
-              map.addLayer(gpx_track_layer);
-              center = gpx_features[0].geometry.getBounds().getCenterLonLat();
-	      map.panTo(center);
-
-
-        var SHADOW_Z_INDEX = 10;
-        var MARKER_Z_INDEX = 11;
-
-              // layer for marker
-              gpx_marker_layer = new OpenLayers.Layer.Vector(
-                "Marker",
-                {
-                    styleMap: new OpenLayers.StyleMap({
-                        // Set the external graphic and background graphic images.
-                        externalGraphic: "{{ STATIC_URL }}img/marker-gold.png",
-                        backgroundGraphic: "{{ STATIC_URL }}img/marker_shadow.png",
-                        
-                        // Makes sure the background graphic is placed correctly relative
-                        // to the external graphic.
-                        backgroundXOffset: 0,
-                        backgroundYOffset: -7,
-                        
-                        // Set the z-indexes of both graphics to make sure the background
-                        // graphics stay in the background (shadows on top of markers looks
-                        // odd; let's not do that).
-                        graphicZIndex: MARKER_Z_INDEX,
-                        backgroundGraphicZIndex: SHADOW_Z_INDEX,
-                        
-                        pointRadius: 10
-                    }),
-//                    isBaseLayer: true,
-                    rendererOptions: {yOrdering: true},
-                    renderers: renderer
-                }
-              );
-              var vert = gpx_features[0].geometry.getVertices()[10];
-
-	      var marker_feature = [new OpenLayers.Feature.Vector(vert)];
-	      gpx_marker_layer.addFeatures(marker_feature);
-              map.addLayer(gpx_marker_layer);
-
+               trackDisplay(responseJSON.trackURL);
             },
             params: {
                'csrf_token': global_csrf_token,
@@ -351,30 +278,6 @@
 
 
 
-$(function () {
-    var track_points = [];
-
-    for (var i = 0; i < 14; i += 0.5)
-        track_points.push([i, Math.sin(i)]);
-
-   
-    $.plot($("#chart-placeholder"), [ track_points ], {
-                            series: {
-                                lines: { show: true }
-                            },
-                            crosshair: { mode: "x" },
-                            grid: { hoverable: true,
-                                    autoHighlight: false,
-                                    clickable : true},
-                            yaxis: { min: -1.2, max: 1.2 }
-                        });
-    });
-    $("#chart-placeholder").bind("plothover",  function (event, pos, item) {
-         $('#chart-legend').html("TOTO " + pos.x + "/" + pos.y);
-    });
-    $("#chart-placeholder").bind("plotclick",  function (event, pos, item) {
-             alert(pos.x + "/" + pos.y);
-    });
       </script> 
  </body> 
 </html> 

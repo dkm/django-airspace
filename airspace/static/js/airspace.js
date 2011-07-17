@@ -18,6 +18,135 @@
 var inter_vectors = new OpenLayers.Layer.Vector("INTERSECTION");
 
 
+// Globals used to store data for GPX track
+// (current marker, current track, track layer)
+// used to store uploaded tracks
+var gpx_track_layer;
+var gpx_marker_layer;
+var gpx_features;
+
+
+/*
+ *
+ */
+
+function trackDisplay(trackURL){
+
+    // display the track in a separate layer that gets
+    // reseted on every upload (should/could be changed...)
+    if (gpx_track_layer) {
+        map.removeLayer(gpx_track_layer);
+    }
+    if (gpx_marker_layer) {
+        map.removeLayer(gpx_marker_layer);
+    }
+
+    var gpx_track_data ;
+
+    jQuery.ajax({
+        url: trackURL ,
+        success: function(result) {
+            gpx_track_data = result;                    
+        },
+        async:   false
+    });          
+
+    gpx_track_layer = new OpenLayers.Layer.Vector("GPX track:" + trackURL , {
+	projection: new OpenLayers.Projection("EPSG:4326"),
+        style: {strokeColor: "red", strokeWidth: 5, strokeOpacity: 0.5},
+        renderers: renderer
+    });
+    var gpxloader = new OpenLayers.Format.GPX({
+        'internalProjection': new OpenLayers.Projection("EPSG:900913"),
+        'externalProjection': new OpenLayers.Projection("EPSG:4326")
+    });
+    gpx_features = gpxloader.read(gpx_track_data);
+    gpx_track_layer.addFeatures(gpx_features);
+    map.addLayer(gpx_track_layer);
+    center = gpx_features[0].geometry.getBounds().getCenterLonLat();
+    map.panTo(center);
+
+
+    var SHADOW_Z_INDEX = 10;
+    var MARKER_Z_INDEX = 11;
+
+    // layer for marker
+    gpx_marker_layer = new OpenLayers.Layer.Vector(
+        "Marker",
+        {
+            styleMap: new OpenLayers.StyleMap({
+                // Set the external graphic and background graphic images.
+                externalGraphic: static_root + "/img/marker-gold.png",
+                backgroundGraphic: static_root + "/img/marker_shadow.png",
+                
+                // Makes sure the background graphic is placed correctly relative
+                // to the external graphic.
+                backgroundXOffset: 0,
+                backgroundYOffset: -7,
+                
+                // Set the z-indexes of both graphics to make sure the background
+                // graphics stay in the background (shadows on top of markers looks
+                // odd; let's not do that).
+                graphicZIndex: MARKER_Z_INDEX,
+                backgroundGraphicZIndex: SHADOW_Z_INDEX,
+                
+                pointRadius: 10
+            }),
+            //                    isBaseLayer: true,
+            rendererOptions: {yOrdering: true},
+            renderers: renderer
+        }
+    );
+    var vert = gpx_features[0].geometry.getVertices()[10];
+
+    var marker_feature = [new OpenLayers.Feature.Vector(vert)];
+    gpx_marker_layer.addFeatures(marker_feature);
+    map.addLayer(gpx_marker_layer);
+    
+    handleChart();
+}
+
+
+function handleChart() {
+    var verts = gpx_features[0].geometry.getVertices();
+    var track_points = []
+    var y_min = 0, y_max = 0;
+
+    for (var i = 0; i < verts.length; i ++){
+        var ele = gpx_features[0].geometry.getVertices()[i].z;
+        if (ele < y_min) y_min = ele;
+        else if (ele > y_max) y_max = ele;
+
+        track_points.push([i, ele]);
+    }
+    
+    $.plot($("#chart-placeholder"), [ track_points ], {
+        series: {
+            lines: { show: true }
+        },
+        crosshair: { mode: "x" },
+        grid: { hoverable: true,
+                autoHighlight: false,
+                clickable : true},
+        yaxis: { min: y_min, max: y_max }
+    });
+
+
+    $("#chart-placeholder").bind("plothover",  function (event, pos, item) {
+        if (gpx_features){
+            gpx_marker_layer.destroyFeatures();
+            var verts = gpx_features[0].geometry.getVertices();
+            gpx_marker_layer.addFeatures([new OpenLayers.Feature.Vector(verts[Math.floor(pos.x) % verts.length])]);
+            $('#chart-legend').html("TOTO " + pos.x + "/" + pos.y + "||" + Math.floor(pos.x));
+        }
+
+    });
+
+    $("#chart-placeholder").bind("plotclick",  function (event, pos, item) {
+        alert(pos.x + "/" + pos.y);
+    });
+}
+
 /*
  * Define style for displaying Airspaces.
  */
