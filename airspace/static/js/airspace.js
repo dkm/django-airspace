@@ -30,7 +30,8 @@ var gpx_features;
  *
  */
 
-function trackDisplay(trackURL){
+function trackDisplay(response){
+    var trackURL = response.trackURL;
 
     // display the track in a separate layer that gets
     // reseted on every upload (should/could be changed...)
@@ -103,13 +104,14 @@ function trackDisplay(trackURL){
     gpx_marker_layer.addFeatures(marker_feature);
     map.addLayer(gpx_marker_layer);
     
-    handleChart();
+    handleChart(response.relief_profile);
 }
 
 
-function handleChart() {
+function handleChart(relief_profile) {
     var verts = gpx_features[0].geometry.getVertices();
-    var track_points = []
+    var track_points = [];
+    var relief_points = [];
     var y_min = 0, y_max = 0;
 
     for (var i = 0; i < verts.length; i ++){
@@ -118,19 +120,26 @@ function handleChart() {
         else if (ele > y_max) y_max = ele;
 
         track_points.push([i, ele]);
+        relief_points.push([i, relief_profile[i]]);
     }
     
-    $.plot($("#chart-placeholder"), [ track_points ], {
-        series: {
-            lines: { show: true }
-        },
-        crosshair: { mode: "x" },
-        grid: { hoverable: true,
-                autoHighlight: false,
-                clickable : true},
-        yaxis: { min: y_min, max: y_max }
-    });
-
+    $.plot($("#chart-placeholder"),
+           [{
+               data : track_points,
+               lines: { show: true }
+           },
+            {
+                data : relief_points,
+                lines: { show: true }
+            }],
+           {
+               crosshair: { mode: "x" },
+               grid: { hoverable: true,
+                       autoHighlight: false,
+                       clickable : true},
+               yaxis: { min: y_min, max: y_max }
+           }
+          );
 
     $("#chart-placeholder").bind("plothover",  function (event, pos, item) {
         if (gpx_features){

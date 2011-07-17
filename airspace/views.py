@@ -9,6 +9,9 @@ from django import forms
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import Distance, D
 
+
+from django.contrib.gis.geos import GEOSGeometry
+
 from django.core import serializers
 from django.views.decorators.csrf import csrf_exempt
 
@@ -25,6 +28,8 @@ from django import forms
 import os.path
 import re
 import osgeo.ogr
+
+import ossim
 
 from django.contrib.gis.geos import GEOSGeometry
     
@@ -133,6 +138,26 @@ def save_upload( uploaded, filename, raw_data ):
 #         print "################################################################"
     
 
+
+def get_relief_profile_along_track(track):
+    """
+    track should be WKT
+    """
+    ossim.init('XXX/ossim_preferences_template')
+
+    relief_profile = []
+    pnt = GEOSGeometry(track)
+    for p in list(pnt):
+        h = ossim.height(p[1], p[0])
+            ## if data not available, default to 0
+        if h:
+            relief_profile.append(h[1])
+        else:
+            relief_profile.append(0)
+    
+    return relief_profile
+
+
 ## disable CSRF when debugging can help...
 ##@csrf_exempt
 def json_track_upload( request ):
@@ -174,6 +199,8 @@ def json_track_upload( request ):
 
     data = serializers.serialize('json', spaces, fields=[])
 
+    relief_profile = get_relief_profile_along_track(track_geos)
+
     # let Ajax Upload know whether we saved it or not by using success: smth
     ##
     ## FIXME this json.loads is not very clean. Serializing and deserializing right after... :(
@@ -183,6 +210,7 @@ def json_track_upload( request ):
     
     ret_json = { 'success': success,
                  'ZID' : json.loads(data),
+                 'relief_profile': relief_profile,
                  'trackURL': '/static/' + filename }
     
     r = json.dumps( ret_json )
