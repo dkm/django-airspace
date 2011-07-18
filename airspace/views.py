@@ -88,9 +88,9 @@ def loadFromGpx(gpxfilename, detectProjection=True):
                         continue
                     else:
                         ls.append(subgeom)
-                for line in ls:
-                    reproject(line)
-                    geoms_to_return.append(line.ExportToWkt())
+            for line in ls:
+                reproject(line)
+                geoms_to_return.append(line.ExportToWkt())
 
     return geoms_to_return
 
