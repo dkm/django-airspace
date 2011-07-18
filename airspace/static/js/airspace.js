@@ -23,7 +23,7 @@ var inter_vectors = new OpenLayers.Layer.Vector("INTERSECTION");
 // used to store uploaded tracks
 var gpx_track_layer;
 var gpx_marker_layer;
-var gpx_features;
+var gpx_points = [];
 
 
 /*
@@ -61,7 +61,7 @@ function trackDisplay(response){
         'internalProjection': new OpenLayers.Projection("EPSG:900913"),
         'externalProjection': new OpenLayers.Projection("EPSG:4326")
     });
-    gpx_features = gpxloader.read(gpx_track_data);
+    var gpx_features = gpxloader.read(gpx_track_data);
     gpx_track_layer.addFeatures(gpx_features);
     map.addLayer(gpx_track_layer);
     center = gpx_features[0].geometry.getBounds().getCenterLonLat();
@@ -98,9 +98,17 @@ function trackDisplay(response){
             renderers: renderer
         }
     );
-    var vert = gpx_features[0].geometry.getVertices()[10];
+    
+    // join tracks
+    gpx_points = [];
+    for (var i = 0; i < gpx_features.length; i++){
+	var total = gpx_features[i].geometry.getVertices();
+	for (var j = 0; j < total.length; j++) {
+	    gpx_points.push(total[j]);
+	}
+    }
 
-    var marker_feature = [new OpenLayers.Feature.Vector(vert)];
+    var marker_feature = [new OpenLayers.Feature.Vector(gpx_points[0])];
     gpx_marker_layer.addFeatures(marker_feature);
     map.addLayer(gpx_marker_layer);
     
@@ -109,13 +117,12 @@ function trackDisplay(response){
 
 
 function handleChart(relief_profile) {
-    var verts = gpx_features[0].geometry.getVertices();
     var track_points = [];
     var relief_points = [];
     var y_min = 0, y_max = 0;
 
-    for (var i = 0; i < verts.length; i ++){
-        var ele = gpx_features[0].geometry.getVertices()[i].z;
+    for (var i = 0; i < gpx_points.length; i ++){
+        var ele = gpx_points[i].z;
         if (ele < y_min) y_min = ele;
         else if (ele > y_max) y_max = ele;
 
@@ -142,10 +149,9 @@ function handleChart(relief_profile) {
           );
 
     $("#chart-placeholder").bind("plothover",  function (event, pos, item) {
-        if (gpx_features){
+        if (gpx_points.length > 0){
             gpx_marker_layer.destroyFeatures();
-            var verts = gpx_features[0].geometry.getVertices();
-            gpx_marker_layer.addFeatures([new OpenLayers.Feature.Vector(verts[Math.floor(pos.x) % verts.length])]);
+            gpx_marker_layer.addFeatures([new OpenLayers.Feature.Vector(gpx_points[Math.floor(pos.x) % gpx_points.length])]);
             $('#chart-legend').html("TOTO " + pos.x + "/" + pos.y + "||" + Math.floor(pos.x));
         }
 

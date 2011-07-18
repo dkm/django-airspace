@@ -15,7 +15,9 @@ from django.contrib.gis.geos import GEOSGeometry
 from django.core import serializers
 from django.views.decorators.csrf import csrf_exempt
 
-from django.contrib.gis.geos import Polygon
+from django.contrib.gis.geos import LineString,Polygon
+##from django.contrib.gis.geos import Polygon
+
 import geojson
 import json
 
@@ -35,12 +37,15 @@ from django.contrib.gis.geos import GEOSGeometry
     
 def loadFromGpx(gpxfilename, detectProjection=True):
     """
-    From a GPX, loads all lines/multilines and returns
-    WKT representation
+    From a GPX, loads all lines/multilines and returns a single
+    WKT representation (tracks are merged)
     """
     driver = osgeo.ogr.GetDriverByName('GPX')
     dataSource = driver.Open(gpxfilename, 0)
-    geoms_to_return = []
+
+    # merge all track into a single track
+    # this can be a problem, depending on why the there is multiple tracks...
+    merged_points = []
 
     for i in xrange(dataSource.GetLayerCount()):
 	layer = dataSource.GetLayer(i)
@@ -70,6 +75,7 @@ def loadFromGpx(gpxfilename, detectProjection=True):
             reproject = lambda(geometry): geometry.Transform(coordTrans)
         featureDefinition = layer.GetLayerDefn()
 
+
 	for j in range(layer.GetFeatureCount()):
             feature = layer.GetNextFeature()
             geometry = feature.GetGeometryRef()
@@ -88,11 +94,14 @@ def loadFromGpx(gpxfilename, detectProjection=True):
                         continue
                     else:
                         ls.append(subgeom)
+            
             for line in ls:
                 reproject(line)
-                geoms_to_return.append(line.ExportToWkt())
-
-    return geoms_to_return
+                for i in xrange(line.GetPointCount()):
+                    merged_points.append(line.GetPoint(i))
+    
+    merged_line = LineString(merged_points)
+    return merged_line
 
 ### from file-upload w/ django support
 ### Heavily based on code from http://kuhlit.blogspot.com/2011/04/ajax-file-uploads-and-csrf-in-django-13.html
@@ -193,7 +202,7 @@ def json_track_upload( request ):
 
     ## the str() is needed to make a copy. If not, ogr Driver ctor
     ## panics on the 'const char *' that it receives...
-    track_geos = GEOSGeometry(loadFromGpx(str(dfilename))[0])
+    track_geos = loadFromGpx(str(dfilename))
    
     spaces = AirSpaces.objects.filter(geom__intersects=track_geos)
 
