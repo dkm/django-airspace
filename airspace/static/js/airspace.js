@@ -130,6 +130,16 @@ function handleChart(relief_profile) {
         relief_points.push([i, relief_profile[i]]);
     }
     
+    var plot_options =            {
+	zoom: { interactive: true },
+        pan: { interactive: true },
+        crosshair: { mode: "x" },
+        grid: { hoverable: true,
+                autoHighlight: false
+              },
+        yaxis: { min: y_min, max: y_max }
+    };
+
     $.plot($("#chart-placeholder"),
            [{
                data : track_points,
@@ -139,13 +149,7 @@ function handleChart(relief_profile) {
                 data : relief_points,
                 lines: { show: true }
             }],
-           {
-               crosshair: { mode: "x" },
-               grid: { hoverable: true,
-                       autoHighlight: false,
-                       clickable : true},
-               yaxis: { min: y_min, max: y_max }
-           }
+	   plot_options
           );
 
     $("#chart-placeholder").bind("plothover",  function (event, pos, item) {
@@ -157,9 +161,9 @@ function handleChart(relief_profile) {
 
     });
 
-    $("#chart-placeholder").bind("plotclick",  function (event, pos, item) {
-        alert(pos.x + "/" + pos.y);
-    });
+    // $("#chart-placeholder").bind("plotclick",  function (event, pos, item) {
+    //     alert(pos.x + "/" + pos.y);
+    // });
 }
 
 /*
