@@ -9,10 +9,13 @@
     <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/flot/jquery.flot.js"></script>
     <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/flot/jquery.flot.crosshair.js"></script>
     <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/flot/jquery.flot.navigate.js"></script> 
+    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/flot/jquery.flot.selection.js"></script> 
+
     <script src="{{ STATIC_URL }}js/file-upload/fileuploader.js"></script> 
     <script src="{{ STATIC_URL }}js/date.js"></script> 
  
     <link rel="stylesheet" href="{{ STATIC_URL }}style2.css" type="text/css"> 
+   <link rel="stylesheet" href="{{ STATIC_URL }}style-amap.css" type="text/css"> 
     <link rel="stylesheet" href="{{STATIC_URL }}style.css" type="text/css"> 
     <link rel="stylesheet" href="{{STATIC_URL }}js/file-upload/fileuploader.css" type="text/css">
 
@@ -60,11 +63,15 @@
 	<div id="zone_count">Zone Count:</div>
 
         <div id="map" class="smallmap"></div>
+
 	<div id="highlighted"></div> 
 	<div id="info"></div> 
 
-        <div id="chart-placeholder" style="width:900px;height:150px;"></div>
-        <div id="chart-legend"></div>
+        <div id="charts">
+	  <div id="chart-placeholder"></div> 
+	  <div id="chart-vertical"></div>
+	</div> <br />
+
 	<div id="zone-info"> </div>
 	<!-- <form id="interload">  -->
 	<!--   Inter: <input type="text" id="interurl" name="interurl" /> <br />  -->

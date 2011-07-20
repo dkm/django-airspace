@@ -1,0 +1,15 @@
+div#chart-placeholder {
+    width:800px;
+    height:150px;
+    float:left;
+}
+
+div#chart-vertical {
+    width:100px;
+    height:150px;
+    float: left;
+}
+
+/* div#charts div { */
+/*     float: left; */
+/* } */

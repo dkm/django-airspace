@@ -145,8 +145,9 @@ function handleChart(relief_profile) {
     }
     
     var plot_options =            {
+	selection: { mode: "x" },
 	zoom: { interactive: true },
-        pan: { interactive: true },
+//        pan: { interactive: true },
         crosshair: { mode: "x" },
         grid: { hoverable: true,
                 autoHighlight: false
@@ -161,17 +162,30 @@ function handleChart(relief_profile) {
 	}
     };
 
+    var vertical_plot_options = {
+	crosshair: { mode: "y" },
+	yaxis: { 
+	    min: y_min, 
+	    max: y_max 
+	}
+    };
+
+    var plot_data = [{
+        data : track_points,
+        lines: { show: true }
+    }, {
+	data : relief_points,
+	lines: { show: true }
+    }];
+
     var plot = $.plot($("#chart-placeholder"),
-           [{
-               data : track_points,
-               lines: { show: true }
-           },
-            {
-                data : relief_points,
-                lines: { show: true }
-            }],
-	   plot_options
-          );
+		      plot_data,
+		      plot_options
+		     );
+    var vert_plot = $.plot($("#chart-vertical"),
+			   [],
+			   vertical_plot_options
+			  );
 
     $("#chart-placeholder").bind("plothover",  function (event, pos, item) {
         if (gpx_points.length > 0){
@@ -190,10 +204,18 @@ function handleChart(relief_profile) {
 		}
 		gpx_marker_layer.addFeatures([new OpenLayers.Feature.Vector(gpx_points[i])]);
 	    }
-            $('#chart-legend').html("TOTO " + pos.x + "/" + pos.y + "||" + Math.floor(pos.x));
         }
 
     });
+
+    $("#chart-placeholder").bind("plotselected", function (event, ranges) {
+        // do the zooming
+        plot = $.plot($("#chart-placeholder"), plot_data,
+                      $.extend(true, {}, plot_options, {
+                          xaxis: { min: ranges.xaxis.from, max: ranges.xaxis.to }
+                      }));
+    });
+
 
     // $("#chart-placeholder").bind("plotclick",  function (event, pos, item) {
     //     alert(pos.x + "/" + pos.y);
