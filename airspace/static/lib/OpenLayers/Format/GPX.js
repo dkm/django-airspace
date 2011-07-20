@@ -149,6 +149,10 @@ OpenLayers.Format.GPX = OpenLayers.Class(OpenLayers.Format.XML, {
             if (ele) {
                 p.z = parseFloat(ele[0].textContent);
             }
+	    var timestamp = points[i].getElementsByTagName("time");
+	    if (timestamp) {
+		p.time = timestamp[0].textContent;
+	    }
             point_features.push(p);
         }
         return new OpenLayers.Geometry.LineString(point_features);
