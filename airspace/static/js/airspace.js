@@ -120,14 +120,28 @@ function handleChart(relief_profile) {
     var track_points = [];
     var relief_points = [];
     var y_min = 0, y_max = 0;
+    var prev_ts = 0;
+    var idx_to_drop = [];
 
     for (var i = 0; i < gpx_points.length; i ++){
         var ele = gpx_points[i].z;
         if (ele < y_min) y_min = ele;
         else if (ele > y_max) y_max = ele;
 
-        track_points.push([i, ele]);
-        relief_points.push([i, relief_profile[i]]);
+	var ts = Date.parse(gpx_points[i].time).getTime();
+	if (prev_ts < ts) {
+            track_points.push([ts, ele]);
+            relief_points.push([ts, relief_profile[i]]);
+	    prev_ts = ts;
+	} else {
+	    // deffer: drop track with timestamp not coherent with time
+	    idx_to_drop.push(i);
+	}
+    }
+
+    // drop track with timestamp not coherent with time
+    for (var i = 0; i<idx_to_drop.length; i++){
+	gpx_points.splice(idx_to_drop[i], idx_to_drop[i]);
     }
     
     var plot_options =            {
@@ -137,10 +151,17 @@ function handleChart(relief_profile) {
         grid: { hoverable: true,
                 autoHighlight: false
               },
-        yaxis: { min: y_min, max: y_max }
+        yaxis: { 
+	    min: y_min, 
+	    max: y_max 
+	},
+	xaxis : {
+	    mode: "time",
+	    timeformat: "%H:%M"
+	}
     };
 
-    $.plot($("#chart-placeholder"),
+    var plot = $.plot($("#chart-placeholder"),
            [{
                data : track_points,
                lines: { show: true }
@@ -155,7 +176,20 @@ function handleChart(relief_profile) {
     $("#chart-placeholder").bind("plothover",  function (event, pos, item) {
         if (gpx_points.length > 0){
             gpx_marker_layer.destroyFeatures();
-            gpx_marker_layer.addFeatures([new OpenLayers.Feature.Vector(gpx_points[Math.floor(pos.x) % gpx_points.length])]);
+
+	    if (item && false) {
+		// flot gives the exact point
+		gpx_marker_layer.addFeatures([new OpenLayers.Feature.Vector(gpx_points[item.seriesIndex])]);
+	    } else {
+		// we have to look for the nearest point
+		var serie = plot.getData()[0];
+		var i;
+		for (i = 0; i < serie.data.length; i++){
+		    if (serie.data[i][0] > pos.x)
+			    break;
+		}
+		gpx_marker_layer.addFeatures([new OpenLayers.Feature.Vector(gpx_points[i])]);
+	    }
             $('#chart-legend').html("TOTO " + pos.x + "/" + pos.y + "||" + Math.floor(pos.x));
         }
 
