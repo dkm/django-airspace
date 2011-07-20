@@ -313,7 +313,7 @@ function getAndDisplay(vectors, space_list){
     }
 
     displayed = to_display;
-    $('#zone_count').html(Object.keys(displayed).length);
+    $('#zone_count').html("Zone Count:" + Object.keys(displayed).length);
 }
 
 function cleanDisplayed(vectors, to_display) {

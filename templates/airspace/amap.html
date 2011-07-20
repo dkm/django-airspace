@@ -57,7 +57,8 @@
 	<!--   </fieldset> -->
 	<!-- </form> -->
 
-	<div id="coords"></div> <field><label>Zone Count</label><div id="zone_count"></div></field>
+	<div id="zone_count">Zone Count:</div>
+
         <div id="map" class="smallmap"></div>
 	<div id="highlighted"></div> 
 	<div id="info"></div> 
@@ -99,7 +100,14 @@
 //	var layerCycleMap = new OpenLayers.Layer.OSM("t@h",
 //	                 "http://tah.openstreetmap.org/Tiles/tile/${z}/${x}/${y}.png");
 
-	var layerCycleMap = new OpenLayers.Layer.OSM("CycleMap", "http://a.thunderflames.org/tiles/cycle/${z}/${x}/${y}.png");
+	<!-- var layerCycle = new OpenLayers.Layer.TMS("OSM Cycle Map",  -->
+        <!--                                 ["http://a.tile.opencyclemap.org/cycle/", -->
+        <!--                                  "http://b.tile.opencyclemap.org/cycle/", -->
+        <!--                                  "http://c.tile.opencyclemap.org/cycle/"], -->
+        <!--                                 { type: 'png', getURL: getTileURL, displayOutsideMaxExtent: true, -->
+        <!--                                   attribution: cycleattrib, transitionEffect: 'resize'}); -->
+	var layerCycleMap = new OpenLayers.Layer.OSM("CycleMap", "http://a.tile.opencyclemap.org/cycle/${z}/${x}/${y}.png");
+//	var layerCycleMap = new OpenLayers.Layer.OSM("CycleMap", "http://a.thunderflames.org/tiles/cycle/${z}/${x}/${y}.png");
 	map.addLayer(layerCycleMap);
  
 	var layer_switcher = new OpenLayers.Control.LayerSwitcher();
@@ -126,10 +134,10 @@
         layer_switcher.activate();
 	selectCtrl.activate();
 
-	map.events.register("mousemove", map, function(e) { 
-                var position = this.events.getMousePosition(e);
-                OpenLayers.Util.getElement("coords").innerHTML = position;
-        });
+//	map.events.register("mousemove", map, function(e) { 
+//                var position = this.events.getMousePosition(e);
+//                OpenLayers.Util.getElement("coords").innerHTML = position;
+//        });
 
         // center on Grenoble. Easier for debug :)
         map.setCenter(new OpenLayers.LonLat(5.72, 45.18).transform(map.displayProjection, map.projection), 10);
