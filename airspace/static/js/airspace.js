@@ -202,6 +202,8 @@ function handleChart(relief_profile) {
 		    if (serie.data[i][0] > pos.x)
 			    break;
 		}
+		plot.unhighlight();
+		plot.highlight(0,i);
 		gpx_marker_layer.addFeatures([new OpenLayers.Feature.Vector(gpx_points[i])]);
 	    }
         }
