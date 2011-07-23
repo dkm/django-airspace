@@ -54,7 +54,7 @@ function trackDisplay(response){
 
     gpx_track_layer = new OpenLayers.Layer.Vector("GPX track:" + trackURL , {
 	projection: new OpenLayers.Projection("EPSG:4326"),
-        style: {strokeColor: "red", strokeWidth: 5, strokeOpacity: 0.5},
+        style: {strokeColor: "red", strokeWidth: 2, strokeOpacity: 1},
         renderers: renderer
     });
     var gpxloader = new OpenLayers.Format.GPX({
@@ -66,7 +66,6 @@ function trackDisplay(response){
     map.addLayer(gpx_track_layer);
     center = gpx_features[0].geometry.getBounds().getCenterLonLat();
     map.panTo(center);
-
 
     var SHADOW_Z_INDEX = 10;
     var MARKER_Z_INDEX = 11;
@@ -167,9 +166,10 @@ function handleChart(relief_profile, intersections) {
     }
 
     // drop track with timestamp not coherent with time
-    for (var i = 0; i<idx_to_drop.length; i++){
-	gpx_points.splice(idx_to_drop[i], idx_to_drop[i]);
-    }
+    // LOOKS BROKEN and triggers incoherency btw gpx_points and series.data
+    // for (var i = 0; i<idx_to_drop.length; i++){
+    // 	gpx_points.splice(idx_to_drop[i], idx_to_drop[i]);
+    // }
     
     var plot_options =            {
 	selection: { mode: "x" },
@@ -241,22 +241,30 @@ function handleChart(relief_profile, intersections) {
         if (gpx_points.length > 0){
             gpx_marker_layer.destroyFeatures();
 
-	    // if (item && false) {
-	    // 	// flot gives the exact point
-	    // 	gpx_marker_layer.addFeatures([new OpenLayers.Feature.Vector(gpx_points[item.seriesIndex])]);
-	    // } else {
-
 	    // we have to look for the nearest point
 	    var serie = plot.getData()[0];
-	    var i;
-	    for (i = 0; i < serie.data.length; i++){
-		if (serie.data[i][0] > pos.x)
-		    break;
+	    
+	    var axes = plot.getAxes();
+	    var xmin = axes.xaxis.datamin;
+	    var xmax = axes.xaxis.datamax;
+	    var ratio = (pos.x-xmin)/(xmax-xmin);
+	    var i = Math.floor(ratio * gpx_points.length);
+	    
+	    if (serie.data[i][0] >= pos.x) {
+		for (; i > 0; i--) {
+		    if (serie.data[i][0]<pos.x)
+			break;
+		}
+	    } else {
+		for (; i < serie.data.length; i++) {
+		    if (serie.data[i][0]>pos.x)
+			break;
+		}
 	    }
+
 	    plot.unhighlight();
 	    plot.highlight(0,i);
 	    gpx_marker_layer.addFeatures([new OpenLayers.Feature.Vector(gpx_points[i])]);
-	    // }
 
 	    // handle vertical chart
 	    var alti = gpx_points[i].z;
@@ -364,7 +372,6 @@ function displayAirspaces(vectors, aspace_gjson){
 }
 
 function getAndDisplay(vectors, space_list){
-
     var to_display = {};
     var already_displayed = {};
     var to_get = {};
