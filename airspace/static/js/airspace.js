@@ -17,6 +17,14 @@
 
 var inter_vectors = new OpenLayers.Layer.Vector("INTERSECTION");
 
+/*
+ * GeoJSON -> OL objs
+ */
+var geojsonloader = new OpenLayers.Format.GeoJSON({
+    'internalProjection': new OpenLayers.Projection("EPSG:900913"),
+    'externalProjection': new OpenLayers.Projection("EPSG:4326")
+});
+
 
 // Globals used to store data for GPX track
 // (current marker, current track, track layer)
@@ -24,7 +32,6 @@ var inter_vectors = new OpenLayers.Layer.Vector("INTERSECTION");
 var gpx_track_layer;
 var gpx_marker_layer;
 var gpx_points = [];
-
 
 /*
  *
@@ -330,14 +337,6 @@ var classStyleLookup = {
 };
 styleMap.addUniqueValueRules("default", "class", classStyleLookup);
 
-
-/*
- * How to load GeoJSON data for our map.
- */
-var geojsonloader = new OpenLayers.Format.GeoJSON({
-    'internalProjection': new OpenLayers.Projection("EPSG:900913"),
-    'externalProjection': new OpenLayers.Projection("EPSG:4326")
-});
 
 
 /*

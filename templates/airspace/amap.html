@@ -74,10 +74,6 @@
 	</div> <br />
 
 	<div id="zone-info"> </div>
-	<!-- <form id="interload">  -->
-	<!--   Inter: <input type="text" id="interurl" name="interurl" /> <br />  -->
-	<!--   <input type="submit" name="load" />  -->
-	<!-- </form>  -->
  
 	<script defer="defer" type="text/javascript"> 
 	$('#spinner-ajax-load').hide();
@@ -108,12 +104,6 @@
 //	var layerCycleMap = new OpenLayers.Layer.OSM("t@h",
 //	                 "http://tah.openstreetmap.org/Tiles/tile/${z}/${x}/${y}.png");
 
-	<!-- var layerCycle = new OpenLayers.Layer.TMS("OSM Cycle Map",  -->
-        <!--                                 ["http://a.tile.opencyclemap.org/cycle/", -->
-        <!--                                  "http://b.tile.opencyclemap.org/cycle/", -->
-        <!--                                  "http://c.tile.opencyclemap.org/cycle/"], -->
-        <!--                                 { type: 'png', getURL: getTileURL, displayOutsideMaxExtent: true, -->
-        <!--                                   attribution: cycleattrib, transitionEffect: 'resize'}); -->
 	var layerCycleMap = new OpenLayers.Layer.OSM("CycleMap", "http://a.tile.opencyclemap.org/cycle/${z}/${x}/${y}.png");
 //	var layerCycleMap = new OpenLayers.Layer.OSM("CycleMap", "http://a.thunderflames.org/tiles/cycle/${z}/${x}/${y}.png");
 	map.addLayer(layerCycleMap);
