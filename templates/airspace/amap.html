@@ -54,14 +54,23 @@
 	  </noscript>
 	</div>
 
-	<!-- <form id="track-form"> -->
-	<!--   <fieldset> -->
-	<!--     <input type="file" name="track-file" /> -->
-	<!--     <input type="submit" value="Upload GPX track" /> -->
-	<!--   </fieldset> -->
-	<!-- </form> -->
-
 	<div id="zone_count">Zone Count:</div>
+
+	<ul id="controlToggle"> 
+            <li> 
+                <input type="radio" name="type" value="none" id="noneToggle"
+                       onclick="toggleControl(this);" checked="checked" /> 
+                <label for="noneToggle">navigate</label> 
+            </li> 
+            <li> 
+                <input type="radio" name="type" value="point" id="pointToggle" onclick="toggleControl(this);" /> 
+                <label for="pointToggle">draw point</label> 
+            </li> 
+            <li> 
+                <input type="radio" name="type" value="path" id="pathToggle" onclick="toggleControl(this);" /> 
+                <label for="lineToggle">draw path</label> 
+            </li> 
+        </ul>
 
         <div id="map" class="smallmap"></div>
 
@@ -92,7 +101,15 @@
                 styleMap: styleMap,
                renderers: renderer
 	});
-	map.addLayers([vectors]);
+
+	var path_vectors = new OpenLayers.Layer.Vector("path", {
+	        projection: new OpenLayers.Projection("EPSG:4326"),
+                styleMap: styleMap,
+               renderers: renderer
+	});
+
+
+	map.addLayers([vectors, path_vectors]);
 
 //        var wms = new OpenLayers.Layer.WMS( "OpenLayers WMS",
 //            "http://vmap0.tiles.osgeo.org/wms/vmap0", {layers: 'basic'} );
@@ -177,64 +194,57 @@
             return false;
         });
 
-	// for box selection
-        var control = new OpenLayers.Control();
-	OpenLayers.Util.extend(control, {
-                    draw: function () {
-                        // this Handler.Box will intercept the shift-mousedown
-                        // before Control.MouseDefault gets to see it
-                        this.box = new OpenLayers.Handler.Box( control,
-                            {"done": this.notice},
-                            {keyMask: OpenLayers.Handler.MOD_SHIFT});
-                        this.box.activate();
-                    },
- 
-                    notice: function (bounds) {
-                        var proj_bounds = new OpenLayers.Bounds();
-                        proj_bounds.extend(map.getLonLatFromPixel(new OpenLayers.Pixel(bounds.left, bounds.bottom)));
-	                proj_bounds.extend(map.getLonLatFromPixel(new OpenLayers.Pixel(bounds.right, bounds.top)));
-                        proj_bounds.transform(map.projection, map.displayProjection);
+	// for line drawing selection
+	var path_control_done = function (path) {
+            path_vectors.removeAllFeatures();
 
-                        $('#spinner-ajax-load').show();
-                        $.getJSON('/airspace/json/bbox/id/' + proj_bounds.toBBOX(), 
-                              function(data) {
-                                 var i = new Array();
-                                 $.each(data, function(index){
-                                     i.push(data[index]['pk']);
-                                 });
-	                         getAndDisplay(vectors, i);
-                        });
-                    }
-                });
-                map.addControl(control);
+
+            $('#spinner-ajax-load').show();
+            $.post('/airspace/json/path/id/',
+                   { 
+                     'LS' : geojsonloader.write(path),
+                     'csrfmiddlewaretoken' : global_csrf_token,
+                   }, function(responseJSON) {
+                     var i = new Array();
+                     $.each(responseJSON.ZID, function(index){
+                       i.push(responseJSON.ZID[index]['pk']);
+                     });
+
+                    // display crossed zones
+                    getAndDisplay(vectors, i);
+
+                    // handleChart(responseJSON.relief_profile, []);
+                    // or trackDisplay().. But these are hardcoded for GPX track.
+            });
+        };
 	
 	// for point selection
-	var pnt_control = new OpenLayers.Control();
-	OpenLayers.Util.extend(pnt_control, {
-                    draw: function () {
-                        // this Handler.Box will intercept the shift-mousedown
-                        // before Control.MouseDefault gets to see it
-                        this.point = new OpenLayers.Handler.Point( pnt_control,
-                            {"done": this.notice},
-                            {keyMask: OpenLayers.Handler.MOD_CTRL | OpenLayers.Handler.MOD_SHIFT});
-                        this.point.activate();
-                    },
- 
-                    notice: function (point) {
-                        point.transform(map.projection, map.displayProjection);
-
-                        $('#spinner-ajax-load').show();
-                        $.getJSON('/airspace/json/point/id/' + point.x + ',' + point.y +',' + $('#radius-search').val(), 
-                              function(data) {
-                                 var i = new Array();
-                                 $.each(data, function(index){
-                                     i.push(data[index]['pk']);
-                                 });
-	                         getAndDisplay(vectors, i);
+        var pnt_control_done = function (point) {
+             point.transform(map.projection, map.displayProjection);
+             $('#spinner-ajax-load').show();
+             $.getJSON('/airspace/json/point/id/' + point.x + ',' + point.y +',' + $('#radius-search').val(), 
+                       function(data) {
+                           var i = new Array();
+                           $.each(data, function(index){
+                                i.push(data[index]['pk']);
+                           });
+	                   getAndDisplay(vectors, i);
                         });
-                    }
-                });
-        map.addControl(pnt_control);
+                    };
+
+
+        var drawControls = {
+                    point: new OpenLayers.Control.DrawFeature(path_vectors,
+                               OpenLayers.Handler.Point,
+	                       { "callbacks": { "done": pnt_control_done} }),
+                    path: new OpenLayers.Control.DrawFeature(path_vectors,
+	                        OpenLayers.Handler.Path,
+                                {"callbacks": { "done": path_control_done}}),
+            };
+ 
+       for(var key in drawControls) {
+             map.addControl(drawControls[key]);
+       }
 
        $('#selected-airspace-form').submit( function () {
 	    $('#spinner-ajax-load').show();
@@ -287,7 +297,16 @@
                      });
         };
 
-
+        function toggleControl(element) {
+                for(key in drawControls) {
+                    var control = drawControls[key];
+                    if(element.value == key && element.checked) {
+                        control.activate();
+                    } else {
+                        control.deactivate();
+                    }
+                }
+         }
 
       </script> 
  </body> 

@@ -117,6 +117,13 @@ function trackDisplay(response){
     var marker_feature = [new OpenLayers.Feature.Vector(gpx_points[0])];
     gpx_marker_layer.addFeatures(marker_feature);
     map.addLayer(gpx_marker_layer);
+ 
+    // server should have sent intersection as GeoJSON objects.
+    // we still have to «resync» these with our internal track
+    // so that we get a chance to display them on our time index chart.
+    for (var i = 0; i < response.intersections.length; i++){
+	var geo = geojsonloader.read(response.intersections[i].inter);
+    }
     
     // example temp intersection object
     // var test_inter = {

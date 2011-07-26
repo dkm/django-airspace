@@ -9,7 +9,6 @@ from django import forms
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import Distance, D
 
-
 from django.contrib.gis.geos import GEOSGeometry
 
 from django.core import serializers
@@ -38,7 +37,7 @@ from django.contrib.gis.geos import GEOSGeometry
 def loadFromGpx(gpxfilename, detectProjection=True):
     """
     From a GPX, loads all lines/multilines and returns a single
-    WKT representation (tracks are merged)
+    geos representation (tracks are merged)
     """
     driver = osgeo.ogr.GetDriverByName('GPX')
     dataSource = driver.Open(gpxfilename, 0)
@@ -167,6 +166,22 @@ def get_relief_profile_along_track(track):
     return relief_profile
 
 
+def get_space_intersect_path(path):
+    spaces = AirSpaces.objects.filter(geom__intersects=path)
+
+    data = serializers.serialize('json', spaces, fields=[])
+    inters = []
+
+    i = 0
+    for iz in spaces:
+        intersect = path.intersection(iz.geom)
+        inters.append({
+                'zid' : iz.pk,
+                'inter': intersect.json
+                })
+        
+    return (data, inters)
+
 ## disable CSRF when debugging can help...
 ##@csrf_exempt
 def json_track_upload( request ):
@@ -203,10 +218,8 @@ def json_track_upload( request ):
     ## the str() is needed to make a copy. If not, ogr Driver ctor
     ## panics on the 'const char *' that it receives...
     track_geos = loadFromGpx(str(dfilename))
-   
-    spaces = AirSpaces.objects.filter(geom__intersects=track_geos)
 
-    data = serializers.serialize('json', spaces, fields=[])
+    inter_space_ids, intersections = get_space_intersect_path(track_geos)
 
     relief_profile = get_relief_profile_along_track(track_geos)
 
@@ -216,17 +229,37 @@ def json_track_upload( request ):
     ##
     ## use upload.name and not the filename as Django handles static files itself. We should
     ## use some var to get the STATIC root instead of 'static/' !
-    
     ret_json = { 'success': success,
-                 'ZID' : json.loads(data),
+                 'ZID' : json.loads(inter_space_ids),
+                 'intersections' : intersections,
                  'relief_profile': relief_profile,
                  'trackURL': '/static/' + filename }
     
-    r = json.dumps( ret_json )
+    r = geojson.dumps( ret_json )
+
     return HttpResponse(r, mimetype='application/json' )
 
 ### Heavily based on code from http://kuhlit.blogspot.com/2011/04/ajax-file-uploads-and-csrf-in-django-13.html
 ### end of file-upload w/ django support
+
+def json_path_id_post(request):
+    args = request.POST
+    ls = []
+    # take only first linestring...
+    str_path = args.getlist("LS")[0]
+    path = GEOSGeometry(str_path)
+    inter_space_ids, intersections = get_space_intersect_path(path)
+    relief_profile = get_relief_profile_along_track(path)
+
+    print str_path
+    ret_json = {
+        'ZID' : json.loads(inter_space_ids),
+        'intersections' : intersections,
+        'relief_profile': relief_profile,
+        }
+    
+    r = geojson.dumps( ret_json )
+    return HttpResponse(r, mimetype='application/json' )
 
 ##
 # get a FeatureCollection out of a list of zone id

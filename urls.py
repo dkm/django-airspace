@@ -23,6 +23,8 @@ urlpatterns = patterns('',
     url(r'^airspace/json/$', 'airspace.views.json_zone_post'),
     url(r'^airspace/json/name/(?P<name>.*)$', 'airspace.views.json_zones_by_name'),
 
+    url(r'^airspace/json/path/id/$', 'airspace.views.json_path_id_post'),
+                       
     url(r'^airspace/json/(?P<zone_ids>[\d,]+)$', 'airspace.views.json_zones'),
 
     url(r'^airspace/json/bbox/(?P<lowlat>-?[\d\.]+),(?P<lowlon>-?[\d\.]+),(?P<highlat>-?[\d\.]+),(?P<highlon>-?[\d\.]+)$', 'airspace.views.json_zone_bbox'),
