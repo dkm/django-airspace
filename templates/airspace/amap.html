@@ -1,6 +1,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml"> 
   <head> 
     <title>Air Space map</title> 
+    <script type="text/javascript">
+      var global_csrf_token = '{{ csrf_token }}';
+      var static_root = '{{ STATIC_URL }}';
+    </script>
+
+
     <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}lib/OpenLayers.js"></script> 
     <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/airspace.js"></script> 
 
@@ -25,10 +31,6 @@
       -- http://stackoverflow.com/questions/5407463/how-to-use-post-with-django 
       -- seems to go this way... But still... Not 100% sure :)
       -->
-    <script type="text/javascript">
-      var global_csrf_token = '{{ csrf_token }}';
-      var static_root = '{{ STATIC_URL }}';
-    </script>
 
 </head> 
   <body> 
@@ -212,7 +214,7 @@
 
                     // display crossed zones
                     getAndDisplay(vectors, i);
-
+                    
                     // handleChart(responseJSON.relief_profile, []);
                     // or trackDisplay().. But these are hardcoded for GPX track.
             });

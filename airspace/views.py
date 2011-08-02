@@ -251,7 +251,6 @@ def json_path_id_post(request):
     inter_space_ids, intersections = get_space_intersect_path(path)
     relief_profile = get_relief_profile_along_track(path)
 
-    print str_path
     ret_json = {
         'ZID' : json.loads(inter_space_ids),
         'intersections' : intersections,

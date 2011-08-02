@@ -29,84 +29,93 @@ var geojsonloader = new OpenLayers.Format.GeoJSON({
 // Globals used to store data for GPX track
 // (current marker, current track, track layer)
 // used to store uploaded tracks
-var gpx_track_layer;
-var gpx_marker_layer;
-var gpx_points = [];
+var track_layer;
+var marker_feature;
 
-/*
- *
- */
 
-function trackDisplay(response){
-    var trackURL = response.trackURL;
 
-    // display the track in a separate layer that gets
-    // reseted on every upload (should/could be changed...)
-    if (gpx_track_layer) {
-        map.removeLayer(gpx_track_layer);
-    }
-    if (gpx_marker_layer) {
-        map.removeLayer(gpx_marker_layer);
-    }
+// global GPX loader
+var gpxloader = new OpenLayers.Format.GPX({
+    'internalProjection': new OpenLayers.Projection("EPSG:900913"),
+    'externalProjection': new OpenLayers.Projection("EPSG:4326")
+});
 
+var SHADOW_Z_INDEX = 10;
+var MARKER_Z_INDEX = 11;
+
+// change this for changing the style attached to the track
+var track_style = {
+    strokeColor: "red", 
+    strokeWidth: 2, 
+    strokeOpacity: 1,
+    graphicZIndex:0 // be sure this one is below the one used for other objects on the layer.
+};
+
+// this is the style attached to the track layer.
+// This is also the style used for the marker.
+var track_layer_style = new OpenLayers.StyleMap({
+    // Set the external graphic and background graphic images.
+    externalGraphic: static_root + "/img/marker-gold.png",
+    backgroundGraphic: static_root + "/img/marker_shadow.png",
+
+    // Makes sure the background graphic is placed correctly relative
+    // to the external graphic.
+    backgroundXOffset: 0,
+    backgroundYOffset: -7,
+
+    // Set the z-indexes of both graphics to make sure the background
+    // graphics stay in the background (shadows on top of markers looks
+    // odd; let's not do that).
+    graphicZIndex: MARKER_Z_INDEX,
+    backgroundGraphicZIndex: SHADOW_Z_INDEX,
+
+    pointRadius: 10,
+});
+
+function initTrackLayer(){
+    // layer for marker
+    track_layer = new OpenLayers.Layer.Vector(
+        "Track",
+        {
+	    projection: new OpenLayers.Projection("EPSG:4326"),
+            styleMap: track_layer_style,
+            //                    isBaseLayer: true,
+            rendererOptions: {yOrdering: true,
+			      zIndexing: true},
+            renderers: renderer
+        }
+    );
+    map.addLayer(track_layer);
+}
+
+function getTrackFromGpx(gpx_track_url, track_layer) {
     var gpx_track_data ;
 
     jQuery.ajax({
-        url: trackURL ,
+        url: gpx_track_url ,
         success: function(result) {
             gpx_track_data = result;                    
         },
         async:   false
-    });          
+    });
 
-    gpx_track_layer = new OpenLayers.Layer.Vector("GPX track:" + trackURL , {
-	projection: new OpenLayers.Projection("EPSG:4326"),
-        style: {strokeColor: "red", strokeWidth: 2, strokeOpacity: 1},
-        renderers: renderer
-    });
-    var gpxloader = new OpenLayers.Format.GPX({
-        'internalProjection': new OpenLayers.Projection("EPSG:900913"),
-        'externalProjection': new OpenLayers.Projection("EPSG:4326")
-    });
     var gpx_features = gpxloader.read(gpx_track_data);
-    gpx_track_layer.addFeatures(gpx_features);
-    map.addLayer(gpx_track_layer);
-    center = gpx_features[0].geometry.getBounds().getCenterLonLat();
-    map.panTo(center);
+    /*
+     * the loader can return several features. Group them,
+     * it will be easier to handle
+     */
+    var geom_collect = new OpenLayers.Geometry.Collection();
+    var tmpArray = [];
 
-    var SHADOW_Z_INDEX = 10;
-    var MARKER_Z_INDEX = 11;
+    for (var i = 0; i < gpx_features.length; i++){
+    	tmpArray.push(gpx_features[i].geometry);
+    }
+    geom_collect.addComponents(tmpArray);
 
-    // layer for marker
-    gpx_marker_layer = new OpenLayers.Layer.Vector(
-        "Marker",
-        {
-            styleMap: new OpenLayers.StyleMap({
-                // Set the external graphic and background graphic images.
-                externalGraphic: static_root + "/img/marker-gold.png",
-                backgroundGraphic: static_root + "/img/marker_shadow.png",
-                
-                // Makes sure the background graphic is placed correctly relative
-                // to the external graphic.
-                backgroundXOffset: 0,
-                backgroundYOffset: -7,
-                
-                // Set the z-indexes of both graphics to make sure the background
-                // graphics stay in the background (shadows on top of markers looks
-                // odd; let's not do that).
-                graphicZIndex: MARKER_Z_INDEX,
-                backgroundGraphicZIndex: SHADOW_Z_INDEX,
-                
-                pointRadius: 10
-            }),
-            //                    isBaseLayer: true,
-            rendererOptions: {yOrdering: true},
-            renderers: renderer
-        }
-    );
-    
+    track_layer.addFeatures(new OpenLayers.Feature.Vector(geom_collect, {}, track_style));
+
     // join tracks
-    gpx_points = [];
+    var gpx_points = [];
     for (var i = 0; i < gpx_features.length; i++){
 	var total = gpx_features[i].geometry.getVertices();
 	for (var j = 0; j < total.length; j++) {
@@ -114,24 +123,21 @@ function trackDisplay(response){
 	}
     }
 
-    var marker_feature = [new OpenLayers.Feature.Vector(gpx_points[0])];
-    gpx_marker_layer.addFeatures(marker_feature);
-    map.addLayer(gpx_marker_layer);
- 
-    // server should have sent intersection as GeoJSON objects.
-    // we still have to «resync» these with our internal track
-    // so that we get a chance to display them on our time index chart.
-    for (var i = 0; i < response.intersections.length; i++){
-	var geo = geojsonloader.read(response.intersections[i].inter);
-    }
-    
-    // example temp intersection object
-    // var test_inter = {
-    // 	start: 50,
-    // 	end: 400
-    // };
+    return gpx_points;
+}
 
-    handleChart(response.relief_profile, []);
+function trackDisplay(response) {
+    if (track_layer == undefined) {
+	initTrackLayer();
+    }
+    // purge any existing marker/track
+    track_layer.removeAllFeatures();
+    var gpx_points = getTrackFromGpx(response.trackURL, track_layer);
+    
+    marker_feature = new OpenLayers.Feature.Vector(gpx_points[0]);
+    track_layer.addFeatures([marker_feature]);
+
+    handleChart(gpx_points, response.relief_profile, []);
 }
 
 /*
@@ -139,8 +145,8 @@ function trackDisplay(response){
  * intersections: array of intersection object. Format still moving ;)
  *
  */
-function handleChart(relief_profile, intersections) {
-    var track_points = [];
+function handleChart(track_points, relief_profile, intersections) {
+    var track_profile = [];
     var relief_points = [];
 
     var y_min = 0, y_max = 0;
@@ -154,14 +160,14 @@ function handleChart(relief_profile, intersections) {
 	intersections[i].data_bottom = [];
     }
 
-    for (var i = 0; i < gpx_points.length; i ++){
-        var ele = gpx_points[i].z;
+    for (var i = 0; i < track_points.length; i ++){
+        var ele = track_points[i].z;
         if (ele < y_min) y_min = ele;
         else if (ele > y_max) y_max = ele;
 
-	var ts = Date.parse(gpx_points[i].time).getTime();
+	var ts = Date.parse(track_points[i].time).getTime();
 	if (prev_ts < ts) {
-            track_points.push([ts, ele]);
+            track_profile.push([ts, ele]);
             relief_points.push([ts, relief_profile[i]]);
 	    prev_ts = ts;
 	} else {
@@ -180,9 +186,9 @@ function handleChart(relief_profile, intersections) {
     }
 
     // drop track with timestamp not coherent with time
-    // LOOKS BROKEN and triggers incoherency btw gpx_points and series.data
+    // LOOKS BROKEN and triggers incoherency btw track_points and series.data
     // for (var i = 0; i<idx_to_drop.length; i++){
-    // 	gpx_points.splice(idx_to_drop[i], idx_to_drop[i]);
+    // 	track_points.splice(idx_to_drop[i], idx_to_drop[i]);
     // }
     
     var plot_options =            {
@@ -216,7 +222,7 @@ function handleChart(relief_profile, intersections) {
     };
 
     plot_data.push({
-        data : track_points,
+        data : track_profile,
         lines: { show: true }
     });
     plot_data.push({
@@ -252,8 +258,9 @@ function handleChart(relief_profile, intersections) {
 			  );
 
     $("#chart-placeholder").bind("plothover",  function (event, pos, item) {
-        if (gpx_points.length > 0){
-            gpx_marker_layer.destroyFeatures();
+        if (track_points.length > 0){
+	    if (marker_feature)
+		track_layer.destroyFeatures([marker_feature]);
 
 	    // we have to look for the nearest point
 	    var serie = plot.getData()[0];
@@ -262,7 +269,7 @@ function handleChart(relief_profile, intersections) {
 	    var xmin = axes.xaxis.datamin;
 	    var xmax = axes.xaxis.datamax;
 	    var ratio = (pos.x-xmin)/(xmax-xmin);
-	    var i = Math.floor(ratio * gpx_points.length);
+	    var i = Math.floor(ratio * track_points.length);
 	    
 	    if (serie.data[i][0] >= pos.x) {
 		for (; i > 0; i--) {
@@ -278,10 +285,11 @@ function handleChart(relief_profile, intersections) {
 
 	    plot.unhighlight();
 	    plot.highlight(0,i);
-	    gpx_marker_layer.addFeatures([new OpenLayers.Feature.Vector(gpx_points[i])]);
+	    marker_feature = new OpenLayers.Feature.Vector(track_points[i]);
+	    track_layer.addFeatures([marker_feature]);
 
 	    // handle vertical chart
-	    var alti = gpx_points[i].z;
+	    var alti = track_points[i].z;
 	    var ground = relief_profile[i];
 
 	    var vertical_data = [];
