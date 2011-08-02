@@ -198,9 +198,7 @@
 
 	// for line drawing selection
 	var path_control_done = function (path) {
-            path_vectors.removeAllFeatures();
-
-
+//            path_vectors.removeAllFeatures();
             $('#spinner-ajax-load').show();
             $.post('/airspace/json/path/id/',
                    { 
@@ -216,7 +214,7 @@
                     getAndDisplay(vectors, i);
                     
                     // handleChart(responseJSON.relief_profile, []);
-                    // or trackDisplay().. But these are hardcoded for GPX track.
+                    trackDisplay(responseJSON, path);
             });
         };
 	

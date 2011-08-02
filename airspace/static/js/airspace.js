@@ -126,26 +126,178 @@ function getTrackFromGpx(gpx_track_url, track_layer) {
     return gpx_points;
 }
 
-function trackDisplay(response) {
+function trackDisplay(response, linestring_track) {
     if (track_layer == undefined) {
 	initTrackLayer();
     }
+    
     // purge any existing marker/track
     track_layer.removeAllFeatures();
-    var gpx_points = getTrackFromGpx(response.trackURL, track_layer);
-    
-    marker_feature = new OpenLayers.Feature.Vector(gpx_points[0]);
-    track_layer.addFeatures([marker_feature]);
 
-    handleChart(gpx_points, response.relief_profile, []);
+    if (response.trackURL){
+	var gpx_points = getTrackFromGpx(response.trackURL, track_layer);
+    
+	marker_feature = new OpenLayers.Feature.Vector(gpx_points[0]);
+	track_layer.addFeatures([marker_feature]);
+	handleChartTimed(gpx_points, response.relief_profile, []);
+    } else if (linestring_track) {
+	var ls_points = linestring_track.components;
+	marker_feature = new OpenLayers.Feature.Vector(ls_points[0]);
+	track_layer.addFeatures([marker_feature]);
+	handleReliefChart(ls_points, response.relief_profile, []);
+    }
+}
+
+function handleReliefChart(track_points, relief_points, intersections) {
+    var relief_profile = [];
+    var y_min = 0, y_max = 0;
+    var idx_to_drop = [];
+
+    var plot_data = [];
+
+    for (var i = 0; i < intersections.length; i++){
+	intersections[i].data_top = [];
+	intersections[i].data_bottom = [];
+    }
+
+    for (var i = 0; i < relief_points.length; i++){
+	if (y_min > relief_points[i]) {
+	    y_min = relief_points[i];
+	} else if (y_max < relief_points[i]) {
+	    y_max = relief_points[i];
+	}
+	relief_profile.push([i, relief_points[i]]);
+    }
+   
+    var plot_options =            {
+	selection: { mode: "x" },
+	zoom: { interactive: true },
+//        pan: { interactive: true },
+        crosshair: { mode: "x" },
+        grid: { hoverable: true,
+                autoHighlight: false
+              },
+        yaxis: { 
+	    min: y_min, 
+	    max: y_max 
+	},
+    };
+
+    var vertical_plot_options = {
+	crosshair: { mode: "y" },
+	yaxis: { 
+	    min: y_min, 
+	    max: y_max 
+	},
+	xaxis: {
+	    min: 0,
+	    max: 1
+	}
+    };
+
+    // plot_data.push({
+    //     data : track_points,
+    //     lines: { show: true }
+    // });
+    plot_data.push({
+	data : relief_profile,
+	lines: { show: true }
+    });
+
+    for (var i=0; i < intersections.length; i++){
+	var ptop = {
+	    data : intersections[i].data_top,
+	    id : "int" + i,
+	    lines : {show: true, fill: false}
+	};
+
+	var pbottom = {
+	    data : intersections[i].data_bottom,
+	    fillBetween: "int" + i,
+	    lines : {show: true, fill: true}
+	};
+
+	plot_data.push(ptop);
+	plot_data.push(pbottom);
+    }
+
+    var plot = $.plot($("#chart-placeholder"),
+		      plot_data,
+		      plot_options
+		     );
+
+    var vert_plot = $.plot($("#chart-vertical"),
+			   [],
+			   vertical_plot_options
+			  );
+
+    $("#chart-placeholder").bind("plothover",  function (event, pos, item) {
+        if (track_points.length > 0){
+	    if (marker_feature)
+		track_layer.destroyFeatures([marker_feature]);
+
+	    // we have to look for the nearest point
+	    var serie = plot.getData()[0];
+	    
+	    var axes = plot.getAxes();
+	    var xmin = axes.xaxis.datamin;
+	    var xmax = axes.xaxis.datamax;
+	    var ratio = (pos.x-xmin)/(xmax-xmin);
+	    var i = Math.floor(ratio * track_points.length);
+	    
+	    if (serie.data[i][0] >= pos.x) {
+		for (; i > 0; i--) {
+		    if (serie.data[i][0]<pos.x)
+			break;
+		}
+	    } else {
+		for (; i < serie.data.length; i++) {
+		    if (serie.data[i][0]>pos.x)
+			break;
+		}
+	    }
+
+	    plot.unhighlight();
+	    plot.highlight(0,i);
+	    marker_feature = new OpenLayers.Feature.Vector(track_points[i]);
+	    track_layer.addFeatures([marker_feature]);
+
+	    // handle vertical chart
+	    var alti = track_points[i].z;
+	    var ground = relief_profile[i];
+
+	    var vertical_data = [];
+	    vertical_data.push([[0,alti],[1,alti]]);
+	    vertical_data.push([[0,ground],[1,ground]]);
+
+	    // reset plot
+	    $.plot($("#chart-vertical"),
+		   [],
+		   vertical_plot_options
+		  );
+	    
+	    vert_plot = $.plot($("#chart-vertical"),
+			       vertical_data,
+			       vertical_plot_options
+			      );
+        }
+
+    });
+
+    $("#chart-placeholder").bind("plotselected", function (event, ranges) {
+        // do the zooming
+        plot = $.plot($("#chart-placeholder"), plot_data,
+                      $.extend(true, {}, plot_options, {
+                          xaxis: { min: ranges.xaxis.from, max: ranges.xaxis.to }
+                      }));
+    });
 }
 
 /*
  * relief_profile: array with ground altitude indexed by gps points index (0 -> ...)
  * intersections: array of intersection object. Format still moving ;)
- *
  */
-function handleChart(track_points, relief_profile, intersections) {
+function handleChartTimed(track_points, relief_profile, intersections) {
     var track_profile = [];
     var relief_points = [];
 
