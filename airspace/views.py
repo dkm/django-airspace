@@ -149,13 +149,13 @@ def save_upload( uploaded, filename, raw_data ):
 
 def get_relief_profile_along_track(track):
     """
-    track should be WKT
+    track should be a list of coord.
     """
     ossim.init('XXX/ossim_preferences_template')
 
     relief_profile = []
-    pnt = GEOSGeometry(track)
-    for p in list(pnt):
+    # pnt = GEOSGeometry(track)
+    for p in track:
         h = ossim.height(p[1], p[0])
             ## if data not available, default to 0
         if h:
@@ -248,11 +248,31 @@ def json_path_id_post(request):
     # take only first linestring...
     str_path = args.getlist("LS")[0]
     path = GEOSGeometry(str_path)
+
+    interpolated_path = []
+    prev_p = Point(path[0])
+    interpolated_path.append(path[0])
+
+    sampling_step = 0.002
+    ## sampling = 0.002 (~100m)
+    for p in path[1:]:
+        n_p = Point(p)
+        d = prev_p.distance(n_p)
+        if d > sampling_step:
+            start_idx = path.project(prev_p)
+            nsamples = int(d/sampling_step)
+            for i in xrange(nsamples):
+                idx = start_idx + sampling_step + i*sampling_step
+                interpolated_path.append(list(path.interpolate(idx)))
+        prev_p = n_p                      
+        interpolated_path.append(p)
+
     inter_space_ids, intersections = get_space_intersect_path(path)
-    relief_profile = get_relief_profile_along_track(path)
+    relief_profile = get_relief_profile_along_track(interpolated_path)
 
     ret_json = {
         'ZID' : json.loads(inter_space_ids),
+        'interpolated' : geojson.geometry.LineString(interpolated_path),
         'intersections' : intersections,
         'relief_profile': relief_profile,
         }
