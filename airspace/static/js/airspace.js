@@ -25,7 +25,6 @@ var geojsonloader = new OpenLayers.Format.GeoJSON({
     'externalProjection': new OpenLayers.Projection("EPSG:4326")
 });
 
-
 // Globals used to store data for GPX track
 // (current marker, current track, track layer)
 // used to store uploaded tracks
@@ -51,12 +50,13 @@ var track_style = {
     graphicZIndex:0 // be sure this one is below the one used for other objects on the layer.
 };
 
+
 // this is the style attached to the track layer.
 // This is also the style used for the marker.
 var track_layer_style = new OpenLayers.StyleMap({
     // Set the external graphic and background graphic images.
-    externalGraphic: static_root + "/img/marker-gold.png",
-    backgroundGraphic: static_root + "/img/marker_shadow.png",
+    externalGraphic: 'http://' + document.location.host + static_root + "img/marker-gold.png",
+    backgroundGraphic: 'http://' + document.location.host + static_root + "img/marker_shadow.png",
 
     // Makes sure the background graphic is placed correctly relative
     // to the external graphic.
