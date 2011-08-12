@@ -177,7 +177,7 @@ def get_space_intersect_path(path):
         intersect = path.intersection(iz.geom)
         inters.append({
                 'zid' : iz.pk,
-                'inter': intersect.json
+                'inter': json.loads(intersect.json)
                 })
         
     return (data, inters)
@@ -273,7 +273,7 @@ def json_path_id_post(request):
     ret_json = {
         'ZID' : json.loads(inter_space_ids),
         'interpolated' : geojson.geometry.LineString(interpolated_path),
-        'intersections' : intersections,
+        'intersections' :intersections,
         'relief_profile': relief_profile,
         }
     
