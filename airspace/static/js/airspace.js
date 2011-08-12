@@ -15,7 +15,7 @@
  //   You should have received a copy of the GNU General Public License
  //   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-var inter_vectors = new OpenLayers.Layer.Vector("INTERSECTION");
+var inter_vectors;
 
 /*
  * GeoJSON -> OL objs
@@ -32,7 +32,6 @@ var track_layer;
 var marker_feature;
 
 
-
 // global GPX loader
 var gpxloader = new OpenLayers.Format.GPX({
     'internalProjection': new OpenLayers.Projection("EPSG:900913"),
@@ -44,12 +43,20 @@ var MARKER_Z_INDEX = 11;
 
 // change this for changing the style attached to the track
 var track_style = {
-    strokeColor: "red", 
+    strokeColor: "orange", 
+    strokeLinecap: 'round',
     strokeWidth: 2, 
     strokeOpacity: 1,
     graphicZIndex:0 // be sure this one is below the one used for other objects on the layer.
 };
 
+var inter_layer_style = new OpenLayers.StyleMap({
+    strokeColor: "red",
+    strokeWidth: 4,
+    strokeLinecap: 'round',
+    strokeOpacity: 1,
+    graphicZIndex:1,
+});
 
 // this is the style attached to the track layer.
 // This is also the style used for the marker.
@@ -86,6 +93,17 @@ function initTrackLayer(){
         }
     );
     map.addLayer(track_layer);
+}
+
+function initIntersectionLayer() {
+    inter_vectors = new OpenLayers.Layer.Vector(
+	"INTERSECTION",
+	{
+	    styleMap: inter_layer_style,
+	    renderers: renderer
+	}
+    );
+    map.addLayer(inter_vectors);
 }
 
 function getTrackFromGpx(gpx_track_url, track_layer) {
@@ -154,7 +172,7 @@ function trackDisplay(response, linestring_track) {
 	var ls_interpolated = new OpenLayers.Geometry.LineString(ls_ol_points);
 	ls_interpolated.transform(map.displayProjection, map.projection);
 
-	handleReliefChart(ls_interpolated, response.relief_profile, []);
+	handleReliefChart(ls_interpolated, response.relief_profile, response.intersections);
     }
 }
 
@@ -243,6 +261,8 @@ function handleReliefChart(track_points, relief_profile, intersections) {
 
 	plot_data.push(ptop);
 	plot_data.push(pbottom);
+
+	displayIntersection(intersections[i].inter);
     }
 
     var plot = $.plot($("#chart-placeholder"),
@@ -524,10 +544,13 @@ function clearZoneInfo(feature) {
     $('#zone-info').html("");
 }
 
-function displayIntersection(map, intersection) {
-  var features = geojsonloader.read(intersection);
-  inter_vectors.addFeatures(features);
-  map.addLayers([inter_vectors]);
+function displayIntersection(intersection) {
+    if (inter_vectors == undefined) {
+	initIntersectionLayer();
+    }
+    var features = geojsonloader.read(intersection);
+    inter_vectors.removeAllFeatures();
+    inter_vectors.addFeatures(features);
 }
 
 function displayAirspaces(vectors, aspace_gjson){
