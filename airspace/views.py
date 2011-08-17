@@ -3,8 +3,6 @@ from airspace.models import AirSpaces
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 
-from django import forms
-
 ## for computing zone in a given radius from a point
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import Distance, D

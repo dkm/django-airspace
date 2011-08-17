@@ -246,6 +246,7 @@ function handleReliefChart(track_points, relief_profile, intersections) {
 	lines: { show: true }
     });
 
+    cleanIntersection();
     for (var i=0; i < intersections.length; i++){
 	var ptop = {
 	    data : intersections[i].data_top,
@@ -544,12 +545,19 @@ function clearZoneInfo(feature) {
     $('#zone-info').html("");
 }
 
+function cleanIntersection() {
+    if (inter_vectors == undefined) {
+	initIntersectionLayer();
+    } else {
+	inter_vectors.removeAllFeatures();
+    }
+}
+
 function displayIntersection(intersection) {
     if (inter_vectors == undefined) {
 	initIntersectionLayer();
     }
     var features = geojsonloader.read(intersection);
-    inter_vectors.removeAllFeatures();
     inter_vectors.addFeatures(features);
 }
 
