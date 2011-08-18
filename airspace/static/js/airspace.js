@@ -148,7 +148,7 @@ function getTrackFromGpx(gpx_track_url, track_layer) {
 	}
     }
 
-    return gpx_points;
+    return new OpenLayers.Geometry.LineString(gpx_points);
 }
 
 function trackDisplay(response, linestring_track) {
@@ -290,13 +290,13 @@ function handleReliefChart(track_points, relief_profile, intersections) {
 
 	    // we have to look for the nearest point
 	    var serie = plot.getData()[0];
-
-	    var pos_x = pos.x > 0 ? pos.x : 0;
-	    pos_x = pos_x < track_points.components.length ? pos_x : track_points.components.length-1;
-
 	    var axes = plot.getAxes();
 	    var xmin = axes.xaxis.datamin;
 	    var xmax = axes.xaxis.datamax;
+
+	    var pos_x = pos.x > xmin ? pos.x : xmin;
+	    if (pos_x > xmax) pos_x = xmax;
+
 	    var ratio = (pos_x-xmin)/(xmax-xmin);
 	    var i = Math.floor(ratio * (track_points.components.length-1));
 	    
@@ -360,12 +360,12 @@ function handleChartTimed(track_points, relief_profile, intersections) {
 	intersections[i].data_bottom = [];
     }
 
-    for (var i = 0; i < track_points.length; i ++){
-        var ele = track_points[i].z;
+    for (var i = 0; i < track_points.components.length; i ++){
+        var ele = track_points.components[i].z;
         if (ele < y_min) y_min = ele;
         else if (ele > y_max) y_max = ele;
 
-	var ts = Date.parse(track_points[i].time).getTime();
+	var ts = Date.parse(track_points.components[i].time).getTime();
 	if (prev_ts < ts) {
             track_profile.push([ts, ele]);
             relief_points.push([ts, relief_profile[i]]);
@@ -433,6 +433,7 @@ function handleChartTimed(track_points, relief_profile, intersections) {
 
 	plot_data.push(ptop);
 	plot_data.push(pbottom);
+	displayIntersection(intersections[i].inter);
     }
 
     var plot = $.plot($("#chart-placeholder"),
@@ -443,20 +444,21 @@ function handleChartTimed(track_points, relief_profile, intersections) {
 
     $("#chart-placeholder").unbind("plothover");
     $("#chart-placeholder").bind("plothover",  function (event, pos, item) {
-        if (track_points.length > 0){
+        if (track_points.components.length > 0){
 	    if (marker_feature)
 		track_layer.destroyFeatures([marker_feature]);
 
 	    // we have to look for the nearest point
 	    var serie = plot.getData()[0];
-	    
-	    var pos_x = pos.x > 0? pos.x : 0;
-
 	    var axes = plot.getAxes();
 	    var xmin = axes.xaxis.datamin;
 	    var xmax = axes.xaxis.datamax;
+
+	    var pos_x = pos.x > xmin ? pos.x : xmin;
+	    if (pos_x > xmax) pos_x = xmax;
+
 	    var ratio = (pos_x-xmin)/(xmax-xmin);
-	    var i = Math.floor(ratio * (track_points.length-1));
+	    var i = Math.floor(ratio * (track_points.components.length-1));
 	    
 	    if (serie.data[i][0] >= pos_x) {
 		for (; i > 0; i--) {
@@ -472,11 +474,11 @@ function handleChartTimed(track_points, relief_profile, intersections) {
 
 	    plot.unhighlight();
 	    plot.highlight(0,i);
-	    marker_feature = new OpenLayers.Feature.Vector(track_points[i]);
+	    marker_feature = new OpenLayers.Feature.Vector(track_points.components[i]);
 	    track_layer.addFeatures([marker_feature]);
 
 	    // handle vertical chart
-	    var alti = track_points[i].z;
+	    var alti = track_points.components[i].z;
 	    var ground = relief_profile[i];
 
 	    var vertical_data = [];
