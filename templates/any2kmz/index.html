@@ -1,0 +1,62 @@
+<html xmlns="http://www.w3.org/1999/xhtml"> 
+  <head> 
+    <title>Any 2 KMZ</title> 
+    <script type="text/javascript">
+      var global_csrf_token = '{{ csrf_token }}';
+      var static_root = '{{ STATIC_URL }}';
+    </script>
+
+
+    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery-1.5.1.js"></script>
+
+    <script src="{{ STATIC_URL }}js/file-upload/fileuploader.js"></script> 
+    <script src="{{ STATIC_URL }}js/date.js"></script> 
+ 
+    <link rel="stylesheet" href="{{ STATIC_URL }}style2.css" type="text/css"> 
+    <link rel="stylesheet" href="{{STATIC_URL }}style.css" type="text/css"> 
+    <link rel="stylesheet" href="{{STATIC_URL }}js/file-upload/fileuploader.css" type="text/css">
+
+    <!-- Not 100% convinced that this is a correct way to handle
+      -- CSRF with Ajax...
+      -- http://stackoverflow.com/questions/5407463/how-to-use-post-with-django 
+      -- seems to go this way... But still... Not 100% sure :)
+      -->
+
+</head> 
+  <body>
+    <div id="spinner-ajax-load"></div>
+
+    <div id="file-uploader">       
+      <noscript>          
+        <p>Please enable JavaScript to use file uploader.</p>
+        <!-- or put a simple form for upload here -->
+      </noscript>
+    </div>
+    <div id="res"></div>
+
+    <script defer="defer" type="text/javascript">
+
+        var uploader = new qq.FileUploader( {
+            action: "/any2kmz/upload",
+            element: $('#file-uploader')[0],
+            multiple: false,
+            onSubmit : function( id, fileName) {
+               $('#spinner-ajax-load').show();
+            },
+            onComplete: function( id, fileName, responseJSON ) {
+               if (!responseJSON.success) {
+                   $('#spinner-ajax-load').hide();
+                   return;
+               }
+	       $('#res').html('<a href="' + responseJSON.track + '">La trace en KMZ</a>');
+            },
+            params: {
+               'csrf_token': global_csrf_token,
+               'csrf_name': 'csrfmiddlewaretoken',
+               'csrf_xname': 'X-CSRFToken',
+           },
+        } ) ;
+    </script>
+
+  </body>
+</html>
