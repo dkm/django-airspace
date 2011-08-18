@@ -15,6 +15,13 @@
  //   You should have received a copy of the GNU General Public License
  //   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
+var inter_colors = ["maroon", "red", "orange", "yellow", "olive",
+		    "purple", "fuchsia", "white", "lime", "green",
+		    "navy", "blue", "aqua", "teal", "black", "silver", 
+		    "gray"];
+var inter_colors_index = 0;
+
 var inter_vectors;
 
 /*
@@ -151,6 +158,7 @@ function trackDisplay(response, linestring_track) {
     
     // purge any existing marker/track
     track_layer.removeAllFeatures();
+    cleanIntersection();
 
     if (response.trackURL){
 	var gpx_points = getTrackFromGpx(response.trackURL, track_layer);
@@ -246,7 +254,7 @@ function handleReliefChart(track_points, relief_profile, intersections) {
 	lines: { show: true }
     });
 
-    cleanIntersection();
+    updateInterCount(intersections);
     for (var i=0; i < intersections.length; i++){
 	var ptop = {
 	    data : intersections[i].data_top,
@@ -553,11 +561,25 @@ function cleanIntersection() {
     }
 }
 
+function updateInterCount(intersections) {
+    $('#inter_count').html('Intersections Count:' + intersections.length);
+}
+
 function displayIntersection(intersection) {
     if (inter_vectors == undefined) {
 	initIntersectionLayer();
     }
     var features = geojsonloader.read(intersection);
+    for (var i=0; i < features.length; i++){
+    	features[i].style = {
+    	    strokeColor: inter_colors[inter_colors_index],
+    	    strokeWidth: 4,
+    	    strokeLinecap: 'round',
+    	    strokeOpacity: 1,
+    	    graphicZIndex:1,
+    	};
+    	inter_colors_index = (inter_colors_index+1)%inter_colors.length;
+    }
     inter_vectors.addFeatures(features);
 }
 
