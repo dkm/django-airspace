@@ -38,6 +38,8 @@ var geojsonloader = new OpenLayers.Format.GeoJSON({
 var track_layer;
 var marker_feature;
 
+var chart_timeout = null;
+var chart_timeout_args = null;
 
 // global GPX loader
 var gpxloader = new OpenLayers.Format.GPX({
@@ -209,6 +211,56 @@ function refreshVerticalPlot(y_min, y_max, vertical_data) {
     }
 }
 
+
+function relief_chart_hover() {
+    if (chart_timeout_args.track_points.components.length > 0){
+	if (marker_feature)
+	    track_layer.destroyFeatures([marker_feature]);
+
+	// we have to look for the nearest point
+	var serie = chart_timeout_args.plot.getData()[0];
+	var axes = chart_timeout_args.plot.getAxes();
+	var xmin = axes.xaxis.datamin;
+	var xmax = axes.xaxis.datamax;
+
+	var pos_x = chart_timeout_args.pos.x > xmin ? chart_timeout_args.pos.x : xmin;
+	if (pos_x > xmax) pos_x = xmax;
+
+	var ratio = (pos_x-xmin)/(xmax-xmin);
+	var i = Math.floor(ratio * (chart_timeout_args.track_points.components.length-1));
+	
+	if (serie.data[i][0] >= pos_x) {
+	    for (; i > 0; i--) {
+		if (serie.data[i][0]<pos_x)
+		    break;
+	    }
+	} else {
+	    for (; i < serie.data.length; i++) {
+		if (serie.data[i][0]>pos_x)
+		    break;
+	    }
+	}
+
+	chart_timeout_args.plot.unhighlight();
+	chart_timeout_args.plot.highlight(0,i);
+	marker_feature = new OpenLayers.Feature.Vector(chart_timeout_args.track_points.components[i]);
+	track_layer.addFeatures([marker_feature]);
+
+	// handle vertical chart
+	// var alti = chart_timeout_args.track_points[i].z;
+	var ground = chart_timeout_args.relief_profile[i];
+
+	var vertical_data = [];
+	// vertical_data.push([[0,alti],[1,alti]]);
+	vertical_data.push([[0,ground],[1,ground]]);
+
+	// reset plot
+	refreshVerticalPlot(chart_timeout_args.y_min, chart_timeout_args.y_max, vertical_data);
+    }
+    chart_timeout_args = null;
+    chart_timeout = null;
+}
+
 function handleReliefChart(track_points, relief_profile, intersections) {
     var relief_points = [];
     var y_min = 0, y_max = 0;
@@ -284,50 +336,17 @@ function handleReliefChart(track_points, relief_profile, intersections) {
     $("#chart-placeholder").unbind("plothover");
 
     $("#chart-placeholder").bind("plothover",  function (event, pos, item) {
-        if (track_points.components.length > 0){
-	    if (marker_feature)
-		track_layer.destroyFeatures([marker_feature]);
-
-	    // we have to look for the nearest point
-	    var serie = plot.getData()[0];
-	    var axes = plot.getAxes();
-	    var xmin = axes.xaxis.datamin;
-	    var xmax = axes.xaxis.datamax;
-
-	    var pos_x = pos.x > xmin ? pos.x : xmin;
-	    if (pos_x > xmax) pos_x = xmax;
-
-	    var ratio = (pos_x-xmin)/(xmax-xmin);
-	    var i = Math.floor(ratio * (track_points.components.length-1));
-	    
-	    if (serie.data[i][0] >= pos_x) {
-		for (; i > 0; i--) {
-		    if (serie.data[i][0]<pos_x)
-			break;
-		}
-	    } else {
-		for (; i < serie.data.length; i++) {
-		    if (serie.data[i][0]>pos_x)
-			break;
-		}
-	    }
-
-	    plot.unhighlight();
-	    plot.highlight(0,i);
-	    marker_feature = new OpenLayers.Feature.Vector(track_points.components[i]);
-	    track_layer.addFeatures([marker_feature]);
-
-	    // handle vertical chart
-	    // var alti = track_points[i].z;
-	    var ground = relief_profile[i];
-
-	    var vertical_data = [];
-	    // vertical_data.push([[0,alti],[1,alti]]);
-	    vertical_data.push([[0,ground],[1,ground]]);
-
-	    // reset plot
-	    refreshVerticalPlot(y_min, y_max, vertical_data);
-        }
+	if (!chart_timeout) {
+	    chart_timeout_args = { track_points : track_points,
+				   relief_profile : relief_profile,
+				   plot : plot,
+				   pos : pos,
+				   event : event,
+				   item : item,
+				   y_min: y_min,
+				   y_max : y_max};
+	    chart_timeout = setTimeout(relief_chart_hover, 1);
+	}
 
     });
 
