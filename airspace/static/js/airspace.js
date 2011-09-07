@@ -20,6 +20,7 @@ var inter_colors = ["maroon", "red", "orange", "yellow", "olive",
 		    "purple", "fuchsia", "white", "lime", "green",
 		    "navy", "blue", "aqua", "teal", "black", "silver", 
 		    "gray"];
+
 var inter_colors_index = 0;
 
 var inter_vectors;
@@ -167,7 +168,7 @@ function trackDisplay(response, linestring_track) {
     
 	marker_feature = new OpenLayers.Feature.Vector(gpx_points[0]);
 	track_layer.addFeatures([marker_feature]);
-	handleChartTimed(gpx_points, response.relief_profile, []);
+	handleChartTimed(gpx_points, response.relief_profile, response.intersections);
     } else if (linestring_track) {
 	var ls_points = linestring_track.components;
 	marker_feature = new OpenLayers.Feature.Vector(ls_points[0]);
@@ -268,11 +269,6 @@ function handleReliefChart(track_points, relief_profile, intersections) {
 
     var plot_data = [];
 
-    for (var i = 0; i < intersections.length; i++){
-	intersections[i].data_top = [];
-	intersections[i].data_bottom = [];
-    }
-
     for (var i = 0; i < relief_profile.length; i++){
 	if (y_min > relief_profile[i]) {
 	    y_min = relief_profile[i];
@@ -308,6 +304,7 @@ function handleReliefChart(track_points, relief_profile, intersections) {
 
     updateInterCount(intersections);
     for (var i=0; i < intersections.length; i++){
+	explodeIntersectionDataTopBottom(intersections[i], false);
 	var ptop = {
 	    data : intersections[i].data_top,
 	    id : "int" + i,
@@ -360,6 +357,20 @@ function handleReliefChart(track_points, relief_profile, intersections) {
     });
 }
 
+function explodeIntersectionDataTopBottom(intersection, reference_timed_path) {
+    if( ! reference_timed_path) {
+        for (var i=0; i<intersection.data_top.length; i++){
+            intersection.data_top[i] = [intersection.start + i, intersection.data_top[i]]
+	    intersection.data_bottom[i] = [intersection.start + i, intersection.data_bottom[i]]
+        }
+    } else {
+        for (var i=0; i<intersection.data_top.length; i++){
+            intersection.data_top[i] = [reference_timed_path[intersection.start + i][0], intersection.data_top[i]]
+	    intersection.data_bottom[i] = [reference_timed_path[intersection.start + i][0], intersection.data_bottom[i]]
+        }
+    }
+}
+
 /*
  * relief_profile: array with ground altitude indexed by gps points index (0 -> ...)
  * intersections: array of intersection object. Format still moving ;)
@@ -373,11 +384,6 @@ function handleChartTimed(track_points, relief_profile, intersections) {
     var idx_to_drop = [];
 
     var plot_data = [];
-
-    for (var i = 0; i < intersections.length; i++){
-	intersections[i].data_top = [];
-	intersections[i].data_bottom = [];
-    }
 
     for (var i = 0; i < track_points.components.length; i ++){
         var ele = track_points.components[i].z;
@@ -437,7 +443,11 @@ function handleChartTimed(track_points, relief_profile, intersections) {
 	lines: { show: true }
     });
 
+    updateInterCount(intersections);
+
     for (var i=0; i < intersections.length; i++){
+	explodeIntersectionDataTopBottom(intersections[i], track_profile);
+
 	var ptop = {
 	    data : intersections[i].data_top,
 	    id : "int" + i,

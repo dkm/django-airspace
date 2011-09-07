@@ -164,19 +164,114 @@ def get_relief_profile_along_track(track):
     return relief_profile
 
 
+def get_spec_alt(spec, point):
+    c = None
+    try:
+        if 'flevel' in spec:
+            c = int(spec['flevel']) * 100 * 0.3048
+
+        elif 'ref' in spec:
+            if spec['ref'] == 'AMSL':
+                c = int(spec['basealti'])
+            elif spec['ref'] == 'AGL':
+                h = ossim.height(point[1], point[0])
+                c = h[1] + spec['basealti']
+            elif spec['ref'] == 'SFC':
+                h = ossim.height(point[1], point[0])
+                c = h[1]
+        if c == None:
+            print "Error :", spec
+    except:
+        # most probably, not possible to get ground height...
+        pass
+    return c
+
+def get_ceiling_floor_at_point(airspace, point):
+    ceil,floor = None, None
+
+    ceil_specs = json.loads(airspace.ceiling)
+    floor_specs = json.loads(airspace.floor)
+
+    for spec in ceil_specs:
+        c = get_spec_alt(spec, point)
+        if ceil == None:
+            ceil = c
+        else:
+            ceil = max(ceil, c)
+            
+    for spec in floor_specs:
+        c = get_spec_alt(spec, point)
+        if floor == None:
+            floor = c
+        else:
+            floor = min(floor, c)
+    
+    return (ceil,floor)
+
+def get_zone_profile_along_path(airspace, path):
+    floor = []
+    ceiling = []
+
+    for point in path:
+        c,f = get_ceiling_floor_at_point(airspace, point)
+        floor.append(f)
+        ceiling.append(c)
+
+    return (floor, ceiling)
+
+
+#yes, this one is very sub-sub-optimal...
+def get_index_of_point_along_path(path, point, thr = 0):
+    for i,p in enumerate(path):
+        if point[0] == p[0] and point[1] == p[1]:
+            return i
+        
+    if thr != 0:
+        pt = Point(point)
+        for i,p in enumerate(path):
+            if pt.distance(Point(p)) <= thr:
+                return i
+    return -1
+
 def get_space_intersect_path(path):
     spaces = AirSpaces.objects.filter(geom__intersects=path)
 
     data = serializers.serialize('json', spaces, fields=[])
     inters = []
 
-    i = 0
     for iz in spaces:
         intersect = path.intersection(iz.geom)
-        inters.append({
+        
+        if intersect.geom_typeid == 1: ## LineString
+            floor, ceiling = get_zone_profile_along_path(iz, intersect)
+
+            start = get_index_of_point_along_path(path, intersect[0], thr=0.001)
+            ## stop = get_index_of_point_along_path(path, intersect[len(intersect)-1], thr=0.001)
+           
+            inters.append({
                 'zid' : iz.pk,
-                'inter': json.loads(intersect.json)
+                'inter': json.loads(intersect.json),
+                'data_top' : floor,
+                'data_bottom': ceiling,
+                'start': start,
+                ## 'stop': stop
                 })
+        elif intersect.geom_typeid == 5: ## MultiLineString
+            for ls in intersect:
+                floor, ceiling = get_zone_profile_along_path(iz, ls)
+                
+                start = get_index_of_point_along_path(path, ls[0], thr=0.001)
+                ## stop = get_index_of_point_along_path(path, ls[len(ls)-1], thr=0.001)
+                
+                inters.append({
+                    'zid' : iz.pk,
+                    'inter': json.loads(ls.json),
+                    'data_top' : floor,
+                    'data_bottom': ceiling,
+                    'start': start,
+                    ## 'stop': stop
+                    })
+
         
     return (data, inters)
 
@@ -265,7 +360,7 @@ def json_path_id_post(request):
         prev_p = n_p                      
         interpolated_path.append(p)
 
-    inter_space_ids, intersections = get_space_intersect_path(path)
+    inter_space_ids, intersections = get_space_intersect_path(LineString(interpolated_path))
     relief_profile = get_relief_profile_along_track(interpolated_path)
 
     ret_json = {
