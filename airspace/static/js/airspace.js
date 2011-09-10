@@ -183,7 +183,7 @@ function trackDisplay(response, linestring_track) {
 	var ls_interpolated = new OpenLayers.Geometry.LineString(ls_ol_points);
 	ls_interpolated.transform(map.displayProjection, map.projection);
 
-	handleReliefChart(ls_interpolated, response.relief_profile, response.intersections);
+	handleReliefChart(ls_interpolated, response.relief_profile, response.intersections, response.indexes);
     }
 }
 
@@ -262,7 +262,7 @@ function relief_chart_hover() {
     chart_timeout = null;
 }
 
-function handleReliefChart(track_points, relief_profile, intersections) {
+function handleReliefChart(track_points, relief_profile, intersections, indexes) {
     var relief_points = [];
     var y_min = 0, y_max = 0;
     var idx_to_drop = [];
@@ -275,7 +275,7 @@ function handleReliefChart(track_points, relief_profile, intersections) {
 	} else if (y_max < relief_profile[i]) {
 	    y_max = relief_profile[i];
 	}
-	relief_points.push([i, relief_profile[i]]);
+	relief_points.push([indexes[i], relief_profile[i]]);
     }
    
     var plot_options =            {
@@ -304,7 +304,7 @@ function handleReliefChart(track_points, relief_profile, intersections) {
 
     updateInterCount(intersections);
     for (var i=0; i < intersections.length; i++){
-	explodeIntersectionDataTopBottom(intersections[i], false);
+	mergeIndexInIntersection(intersections[i]);
 	var ptop = {
 	    data : intersections[i].data_top,
 	    id : "int" + i,
@@ -357,19 +357,19 @@ function handleReliefChart(track_points, relief_profile, intersections) {
     });
 }
 
-function explodeIntersectionDataTopBottom(intersection, reference_timed_path) {
-    if( ! reference_timed_path) {
-        for (var i=0; i<intersection.data_top.length; i++){
-            intersection.data_top[i] = [intersection.start + i, intersection.data_top[i]]
-	    intersection.data_bottom[i] = [intersection.start + i, intersection.data_bottom[i]]
-        }
-    } else {
-        for (var i=0; i<intersection.data_top.length; i++){
-            intersection.data_top[i] = [reference_timed_path[intersection.start + i][0], intersection.data_top[i]]
-	    intersection.data_bottom[i] = [reference_timed_path[intersection.start + i][0], intersection.data_bottom[i]]
-        }
+function mergeIndexInIntersection(intersection) {
+    for (var i=0; i<intersection.data_top.length; i++){
+        intersection.data_top[i] = [intersection.indexes[i], intersection.data_top[i]]
+        intersection.data_bottom[i] = [intersection.indexes[i], intersection.data_bottom[i]]
     }
 }
+
+// function explodeIntersectionDataTopBottom(intersection, reference_path) {
+//     for (var i=0; i<intersection.data_top.length; i++){
+//         intersection.data_top[i] = [reference_path[intersection.start + i][0], intersection.data_top[i]]
+//         intersection.data_bottom[i] = [reference_path[intersection.start + i][0], intersection.data_bottom[i]]
+//     }
+// }
 
 /*
  * relief_profile: array with ground altitude indexed by gps points index (0 -> ...)
@@ -398,15 +398,6 @@ function handleChartTimed(track_points, relief_profile, intersections) {
 	} else {
 	    // deffer: drop track with timestamp not coherent with time
 	    idx_to_drop.push(i);
-	}
-
-	for (var int_idx = 0; int_idx < intersections.length; int_idx++){
-	    var inter = intersections[int_idx];
-
-	    if (i > inter.start && i < inter.end) {
-		inter.data_bottom.push([ts, relief_profile[i] + 150]);
-		inter.data_top.push([ts, 3000]);
-	    }
 	}
     }
 
@@ -443,27 +434,27 @@ function handleChartTimed(track_points, relief_profile, intersections) {
 	lines: { show: true }
     });
 
-    updateInterCount(intersections);
+    // disabled, need resync with linear index + ts
+    // updateInterCount(intersections);
+    // for (var i=0; i < intersections.length; i++){
+    // 	explodeIntersectionDataTopBottom(intersections[i], track_profile);
 
-    for (var i=0; i < intersections.length; i++){
-	explodeIntersectionDataTopBottom(intersections[i], track_profile);
+    // 	var ptop = {
+    // 	    data : intersections[i].data_top,
+    // 	    id : "int" + i,
+    // 	    lines : {show: true, fill: false}
+    // 	};
 
-	var ptop = {
-	    data : intersections[i].data_top,
-	    id : "int" + i,
-	    lines : {show: true, fill: false}
-	};
+    // 	var pbottom = {
+    // 	    data : intersections[i].data_bottom,
+    // 	    fillBetween: "int" + i,
+    // 	    lines : {show: true, fill: true}
+    // 	};
 
-	var pbottom = {
-	    data : intersections[i].data_bottom,
-	    fillBetween: "int" + i,
-	    lines : {show: true, fill: true}
-	};
-
-	plot_data.push(ptop);
-	plot_data.push(pbottom);
-	displayIntersection(intersections[i].inter);
-    }
+    // 	plot_data.push(ptop);
+    // 	plot_data.push(pbottom);
+    // 	displayIntersection(intersections[i].inter);
+    // }
 
     var plot = $.plot($("#chart-placeholder"),
 		      plot_data,

@@ -12,7 +12,7 @@ from django.contrib.gis.geos import GEOSGeometry
 from django.core import serializers
 from django.views.decorators.csrf import csrf_exempt
 
-from django.contrib.gis.geos import LineString,Polygon
+from django.contrib.gis.geos import LineString,Polygon,MultiLineString
 ##from django.contrib.gis.geos import Polygon
 
 import geojson
@@ -219,19 +219,79 @@ def get_zone_profile_along_path(airspace, path):
 
     return (floor, ceiling)
 
+def get_start_stop_segement_in_path(path, segment, thr=0):
+    start = stop = None
+    
+    for i,p in enumerate(path):
+        if not start and segment[0][0] == p[0] and segment[0][1] == p[1] :
+            start = i
+        elif start and not stop and segment[-1][0] == p[0] and segment[-1][1] == p[1] :
+            stop = i
+
+        if start and stop:
+            break
+
+    if thr != 0 :
+        startp = stopp = None
+        if not start:
+            startp = Point(segment[0])
+        if not stop:
+            stopp = Point(segment[-1])
+            
+        for i,p in enumerate(path):
+            if not start:
+                print 'dist start:', startp.distance(Point(p)) 
+            if not stop:
+                print 'dist sttop:', stopp.distance(Point(p)) 
+
+            if start and not stop and stopp.distance(Point(p)) <= thr:
+                stop = i
+            if not start and startp.distance(Point(p)) <= thr:
+                start = i
+    
+    return (start,stop)
 
 #yes, this one is very sub-sub-optimal...
-def get_index_of_point_along_path(path, point, thr = 0):
-    for i,p in enumerate(path):
-        if point[0] == p[0] and point[1] == p[1]:
-            return i
+# def get_index_of_point_along_path(path, point, thr = 0, after=-1):
+#     for i,p in enumerate(path):
+#         if point[0] == p[0] and point[1] == p[1] and i>after:
+#             return i
         
-    if thr != 0:
-        pt = Point(point)
-        for i,p in enumerate(path):
-            if pt.distance(Point(p)) <= thr:
-                return i
-    return -1
+#     if thr != 0:
+#         pt = Point(point)
+#         for i,p in enumerate(path):
+#             if pt.distance(Point(p)) <= thr:
+#                 return i
+#     return -1
+
+def merge(ML):
+    coords = list(ML[0])
+    for ls in ML[1:-1]:
+        coords += list(ls)[1:-1]
+    coords += list(ML[-1][1:])
+    return LineString(coords)
+
+def merge_touching_linestring(multiLS):
+    buf = [multiLS[0]]
+    final = []
+    
+    for i,ls in enumerate(multiLS[1:]):
+        prev_p = buf[-1][-1]
+        next_p = ls[0]
+        if prev_p[0] == next_p[0] and prev_p[1] == next_p[1]:
+            buf.append(ls)
+        else:
+            ml = MultiLineString(buf)
+            final.append(merge(ml))
+            buf = [ls]
+    if len(buf) > 2:
+        ml = MultiLineString(buf)
+
+        final.append(merge(ml))
+    else:
+        final.append(buf[0])
+    return final
+    
 
 def get_space_intersect_path(path):
     spaces = AirSpaces.objects.filter(geom__intersects=path)
@@ -241,37 +301,33 @@ def get_space_intersect_path(path):
 
     for iz in spaces:
         intersect = path.intersection(iz.geom)
-        
+       
         if intersect.geom_typeid == 1: ## LineString
-            floor, ceiling = get_zone_profile_along_path(iz, intersect)
-
-            start = get_index_of_point_along_path(path, intersect[0], thr=0.001)
-            ## stop = get_index_of_point_along_path(path, intersect[len(intersect)-1], thr=0.001)
-           
+            nls = intersect
+            
+            floor, ceiling = get_zone_profile_along_path(iz, nls)
+            
             inters.append({
                 'zid' : iz.pk,
-                'inter': json.loads(intersect.json),
+                'inter': json.loads(nls.json),
                 'data_top' : floor,
                 'data_bottom': ceiling,
-                'start': start,
-                ## 'stop': stop
+                'indexes' : [path.project(Point(x)) for x in nls],
                 })
         elif intersect.geom_typeid == 5: ## MultiLineString
-            for ls in intersect:
-                floor, ceiling = get_zone_profile_along_path(iz, ls)
-                
-                start = get_index_of_point_along_path(path, ls[0], thr=0.001)
-                ## stop = get_index_of_point_along_path(path, ls[len(ls)-1], thr=0.001)
-                
+            intersect_merged = merge_touching_linestring(intersect)
+
+            for ls in intersect_merged:
+                nls = ls
+                floor, ceiling = get_zone_profile_along_path(iz, nls)
+
                 inters.append({
                     'zid' : iz.pk,
-                    'inter': json.loads(ls.json),
+                    'inter': json.loads(nls.json),
                     'data_top' : floor,
                     'data_bottom': ceiling,
-                    'start': start,
-                    ## 'stop': stop
+                    'indexes' : [path.project(Point(x)) for x in nls],
                     })
-
         
     return (data, inters)
 
@@ -360,13 +416,16 @@ def json_path_id_post(request):
         prev_p = n_p                      
         interpolated_path.append(p)
 
+    indexes = [path.project(Point(x)) for x in interpolated_path]
+
     inter_space_ids, intersections = get_space_intersect_path(LineString(interpolated_path))
     relief_profile = get_relief_profile_along_track(interpolated_path)
-
+    
     ret_json = {
         'ZID' : json.loads(inter_space_ids),
-        'interpolated' : geojson.geometry.LineString(interpolated_path),
         'intersections' :intersections,
+        'indexes': indexes,
+        'interpolated' : geojson.geometry.LineString(interpolated_path),
         'relief_profile': relief_profile,
         }
     
