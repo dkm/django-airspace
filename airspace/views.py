@@ -382,6 +382,7 @@ def json_track_upload( request ):
                  'ZID' : json.loads(inter_space_ids),
                  'intersections' : intersections,
                  'relief_profile': relief_profile,
+                 'indexes' : [track_geos.project(Point(x)) for x in track_geos],
                  'trackURL': '/static/' + filename }
     
     r = geojson.dumps( ret_json )
