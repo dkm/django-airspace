@@ -32,8 +32,17 @@
         <!-- or put a simple form for upload here -->
       </noscript>
     </div>
+    <div>
+      <ul>
+	<li>Original (99.999%) code: By Tom
+	Payne: <a href="https://github.com/twpayne/igc2kmz">original igc2kmz on github</a> </li>
+	<li>Some minor changes (packaging mostly): By
+	Me: <a href="https://github.com/dkm/igc2kmz">igc2kmz plus minors
+	changes on github</a></li>
+      </ul>
+    </div>
     <div id="res"></div>
-
+    
     <script defer="defer" type="text/javascript">
 
         var uploader = new qq.FileUploader( {
@@ -48,7 +57,10 @@
                    $('#spinner-ajax-load').hide();
                    return;
                }
-	       $('#res').html('<a href="' + responseJSON.track + '">La trace en KMZ</a>');
+	       $('#res').html('<a href="' + responseJSON.track + '">La trace en ' +
+               'KMZ</a>. Voir sur <a href="http://maps.google.fr/maps?q=http://' + location.host +
+               responseJSON.track + '">Google Maps</a> (un peu ' +
+               'foulli, valide que quelques heures avant que ça disparaisse)');
             },
             params: {
                'csrf_token': global_csrf_token,
