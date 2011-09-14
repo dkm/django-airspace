@@ -169,7 +169,7 @@ function trackDisplay(response, linestring_track) {
 	marker_feature = new OpenLayers.Feature.Vector(gpx_points[0]);
 	track_layer.addFeatures([marker_feature]);
 	//	handleChartTimed(gpx_points, response.relief_profile, response.intersections);
-	handleReliefChart(gpx_points, response.relief_profile, response.intersections, response.indexes);
+	handleReliefChart(gpx_points, response.relief_profile, response.intersections, response.indexes, true);
     } else if (linestring_track) {
 	var ls_points = linestring_track.components;
 	marker_feature = new OpenLayers.Feature.Vector(ls_points[0]);
@@ -184,20 +184,20 @@ function trackDisplay(response, linestring_track) {
 	var ls_interpolated = new OpenLayers.Geometry.LineString(ls_ol_points);
 	ls_interpolated.transform(map.displayProjection, map.projection);
 
-	handleReliefChart(ls_interpolated, response.relief_profile, response.intersections, response.indexes);
+	handleReliefChart(ls_interpolated, response.relief_profile, response.intersections, response.indexes, false);
     }
 }
 
 function refreshVerticalPlot(y_min, y_max, vertical_data) {
    var vertical_plot_options = {
-	crosshair: { mode: "y" },
+//	crosshair: { mode: "y" },
 	yaxis: { 
 	    min: y_min, 
 	    max: y_max 
 	},
 	xaxis: {
 	    min: 0,
-	    max: 1
+	    max: 1,
 	}
     };
 
@@ -249,11 +249,14 @@ function relief_chart_hover() {
 	track_layer.addFeatures([marker_feature]);
 
 	// handle vertical chart
-	// var alti = chart_timeout_args.track_points[i].z;
+	// 
 	var ground = chart_timeout_args.relief_profile[i];
 
 	var vertical_data = [];
-	// vertical_data.push([[0,alti],[1,alti]]);
+	if (chart_timeout_args.from_gps_track){
+	    var alti = chart_timeout_args.track_points.components[i].z;
+	    vertical_data.push([[0,alti],[1,alti]]);
+	}
 	vertical_data.push([[0,ground],[1,ground]]);
 
 	// reset plot
@@ -263,12 +266,15 @@ function relief_chart_hover() {
     chart_timeout = null;
 }
 
-function handleReliefChart(track_points, relief_profile, intersections, indexes) {
+function handleReliefChart(track_points, relief_profile, intersections, indexes, from_gps_track) {
     var relief_points = [];
     var y_min = 0, y_max = 0;
     var idx_to_drop = [];
 
     var plot_data = [];
+
+    var xticks_data = [];
+    var track_points_resynced = [];
 
     for (var i = 0; i < relief_profile.length; i++){
 	if (y_min > relief_profile[i]) {
@@ -277,27 +283,60 @@ function handleReliefChart(track_points, relief_profile, intersections, indexes)
 	    y_max = relief_profile[i];
 	}
 	relief_points.push([indexes[i], relief_profile[i]]);
+
+	if (from_gps_track){
+	    if (i == 0 || i == relief_profile.length - 1 || (i % (Math.floor(relief_profile.length/4))) == 0 ) {
+		var ts = Date.parse(track_points.components[i].time);
+		xticks_data.push([indexes[i], ts.toString("HH:mm")]);
+	    }
+	    track_points_resynced.push([indexes[i], track_points.components[i].z]);
+
+	    if (y_min > track_points.components[i].z) {
+		y_min = track_points.components[i].z;
+	    } else if ( y_max < track_points.components[i].z) {
+		y_max = track_points.components[i].z;
+	    }
+	}
     }
-   
-    var plot_options =            {
-	selection: { mode: "x" },
-	zoom: { interactive: true },
-//        pan: { interactive: true },
+
+    var x_max = indexes[indexes.length-1];
+
+    var plot_options = {
+//	selection: { mode: "x" },
+	zoom: { 
+	    interactive: true,
+	    
+	},
+	pan: {
+	    interactive: true,
+	    cursor: "move",      // CSS mouse cursor value used when dragging, e.g. "pointer"
+	    frameRate: 20
+	},
         crosshair: { mode: "x" },
         grid: { hoverable: true,
                 autoHighlight: false
               },
+	xaxis : {
+	    zoomRange : [null, x_max],
+	    panRange : [0, x_max]
+	},
         yaxis: { 
 	    min: y_min, 
-	    max: y_max 
+	    max: y_max,
+	    zoomRange : [null, y_max-y_min],
+	    panRange : [y_min, y_max]
 	},
-    };
+    };   
 
+    if (from_gps_track) {
+	plot_options.xaxis.ticks = xticks_data;
+	plot_data.push({
+            data : track_points_resynced,
+            lines: { show: true }
+	});
+    }
  
-    // plot_data.push({
-    //     data : track_points,
-    //     lines: { show: true }
-    // });
+
     plot_data.push({
 	data : relief_points,
 	lines: { show: true }
@@ -329,7 +368,7 @@ function handleReliefChart(track_points, relief_profile, intersections, indexes)
 		      plot_options
 		     );
 
-    refreshVerticalPlot(y_min, y_max);
+    refreshVerticalPlot(y_min, y_max, [ [ [0,0], [0,0] ] ]);
 
     $("#chart-placeholder").unbind("plothover");
 
@@ -342,7 +381,8 @@ function handleReliefChart(track_points, relief_profile, intersections, indexes)
 				   event : event,
 				   item : item,
 				   y_min: y_min,
-				   y_max : y_max};
+				   y_max : y_max,
+				   from_gps_track : from_gps_track };
 	    chart_timeout = setTimeout(relief_chart_hover, 1);
 	}
 
@@ -363,167 +403,6 @@ function mergeIndexInIntersection(intersection) {
         intersection.data_top[i] = [intersection.indexes[i], intersection.data_top[i]]
         intersection.data_bottom[i] = [intersection.indexes[i], intersection.data_bottom[i]]
     }
-}
-
-// function explodeIntersectionDataTopBottom(intersection, reference_path) {
-//     for (var i=0; i<intersection.data_top.length; i++){
-//         intersection.data_top[i] = [reference_path[intersection.start + i][0], intersection.data_top[i]]
-//         intersection.data_bottom[i] = [reference_path[intersection.start + i][0], intersection.data_bottom[i]]
-//     }
-// }
-
-/*
- * relief_profile: array with ground altitude indexed by gps points index (0 -> ...)
- * intersections: array of intersection object. Format still moving ;)
- */
-function handleChartTimed(track_points, relief_profile, intersections) {
-    var track_profile = [];
-    var relief_points = [];
-
-    var y_min = 0, y_max = 0;
-    var prev_ts = 0;
-    var idx_to_drop = [];
-
-    var plot_data = [];
-
-    for (var i = 0; i < track_points.components.length; i ++){
-        var ele = track_points.components[i].z;
-        if (ele < y_min) y_min = ele;
-        else if (ele > y_max) y_max = ele;
-
-	var ts = Date.parse(track_points.components[i].time).getTime();
-	if (prev_ts < ts) {
-            track_profile.push([ts, ele]);
-            relief_points.push([ts, relief_profile[i]]);
-	    prev_ts = ts;
-	} else {
-	    // deffer: drop track with timestamp not coherent with time
-	    idx_to_drop.push(i);
-	}
-    }
-
-    // drop track with timestamp not coherent with time
-    // LOOKS BROKEN and triggers incoherency btw track_points and series.data
-    // for (var i = 0; i<idx_to_drop.length; i++){
-    // 	track_points.splice(idx_to_drop[i], idx_to_drop[i]);
-    // }
-    
-    var plot_options =            {
-	selection: { mode: "x" },
-	zoom: { interactive: true },
-//        pan: { interactive: true },
-        crosshair: { mode: "x" },
-        grid: { hoverable: true,
-                autoHighlight: false
-              },
-        yaxis: { 
-	    min: y_min, 
-	    max: y_max 
-	},
-	xaxis : {
-	    mode: "time",
-	    timeformat: "%H:%M"
-	}
-    };
-
-    plot_data.push({
-        data : track_profile,
-        lines: { show: true }
-    });
-    plot_data.push({
-	data : relief_points,
-	lines: { show: true }
-    });
-
-    // disabled, need resync with linear index + ts
-    // updateInterCount(intersections);
-    // for (var i=0; i < intersections.length; i++){
-    // 	explodeIntersectionDataTopBottom(intersections[i], track_profile);
-
-    // 	var ptop = {
-    // 	    data : intersections[i].data_top,
-    // 	    id : "int" + i,
-    // 	    lines : {show: true, fill: false}
-    // 	};
-
-    // 	var pbottom = {
-    // 	    data : intersections[i].data_bottom,
-    // 	    fillBetween: "int" + i,
-    // 	    lines : {show: true, fill: true}
-    // 	};
-
-    // 	plot_data.push(ptop);
-    // 	plot_data.push(pbottom);
-    // 	displayIntersection(intersections[i].inter);
-    // }
-
-    var plot = $.plot($("#chart-placeholder"),
-		      plot_data,
-		      plot_options
-		     );
-    refreshVerticalPlot(y_min, y_max);
-
-    $("#chart-placeholder").unbind("plothover");
-    $("#chart-placeholder").bind("plothover",  function (event, pos, item) {
-        if (track_points.components.length > 0){
-	    if (marker_feature)
-		track_layer.destroyFeatures([marker_feature]);
-
-	    // we have to look for the nearest point
-	    var serie = plot.getData()[0];
-	    var axes = plot.getAxes();
-	    var xmin = axes.xaxis.datamin;
-	    var xmax = axes.xaxis.datamax;
-
-	    var pos_x = pos.x > xmin ? pos.x : xmin;
-	    if (pos_x > xmax) pos_x = xmax;
-
-	    var ratio = (pos_x-xmin)/(xmax-xmin);
-	    var i = Math.floor(ratio * (track_points.components.length-1));
-	    
-	    if (serie.data[i][0] >= pos_x) {
-		for (; i > 0; i--) {
-		    if (serie.data[i][0]<pos_x)
-			break;
-		}
-	    } else {
-		for (; i < serie.data.length; i++) {
-		    if (serie.data[i][0]>pos_x)
-			break;
-		}
-	    }
-
-	    plot.unhighlight();
-	    plot.highlight(0,i);
-	    marker_feature = new OpenLayers.Feature.Vector(track_points.components[i]);
-	    track_layer.addFeatures([marker_feature]);
-
-	    // handle vertical chart
-	    var alti = track_points.components[i].z;
-	    var ground = relief_profile[i];
-
-	    var vertical_data = [];
-	    vertical_data.push([[0,alti],[1,alti]]);
-	    vertical_data.push([[0,ground],[1,ground]]);
-
-	    // reset plot
-	    refreshVerticalPlot(y_min, y_max, vertical_data);
-        }
-
-    });
-    $("#chart-placeholder").unbind("plotselected");
-    $("#chart-placeholder").bind("plotselected", function (event, ranges) {
-        // do the zooming
-        plot = $.plot($("#chart-placeholder"), plot_data,
-                      $.extend(true, {}, plot_options, {
-                          xaxis: { min: ranges.xaxis.from, max: ranges.xaxis.to }
-                      }));
-    });
-
-
-    // $("#chart-placeholder").bind("plotclick",  function (event, pos, item) {
-    //     alert(pos.x + "/" + pos.y);
-    // });
 }
 
 /*
