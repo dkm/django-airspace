@@ -265,6 +265,9 @@ def get_start_stop_segement_in_path(path, segment, thr=0):
 #     return -1
 
 def merge(ML):
+    if len(ML) == 1:
+        return ML[0]
+
     coords = list(ML[0])
     for ls in ML[1:-1]:
         coords += list(ls)[1:-1]
