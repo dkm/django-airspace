@@ -211,13 +211,19 @@ def get_ceiling_floor_at_point(airspace, point):
 def get_zone_profile_along_path(airspace, path):
     floor = []
     ceiling = []
+    minh, maxh = 100000,-1
 
     for point in path:
         c,f = get_ceiling_floor_at_point(airspace, point)
         floor.append(f)
         ceiling.append(c)
+        if f < minh:
+            minh = f
+            
+        if c > maxh:
+            maxh = c
 
-    return (floor, ceiling)
+    return (floor, ceiling, minh, maxh)
 
 def get_start_stop_segement_in_path(path, segment, thr=0):
     start = stop = None
@@ -296,10 +302,10 @@ def merge_touching_linestring(multiLS):
     return final
     
 
-def get_space_intersect_path(path):
+def get_space_intersect_path(path, height_limit=None):
     spaces = AirSpaces.objects.filter(geom__intersects=path)
 
-    data = serializers.serialize('json', spaces, fields=[])
+    data = {} ##serializers.serialize('json', spaces, fields=[])
     inters = []
 
     for iz in spaces:
@@ -308,31 +314,37 @@ def get_space_intersect_path(path):
         if intersect.geom_typeid == 1: ## LineString
             nls = intersect
             
-            floor, ceiling = get_zone_profile_along_path(iz, nls)
-            
-            inters.append({
-                'zid' : iz.pk,
-                'inter': json.loads(nls.json),
-                'data_top' : floor,
-                'data_bottom': ceiling,
-                'indexes' : [path.project(Point(x)) for x in nls],
-                })
+            floor, ceiling, minh, maxh = get_zone_profile_along_path(iz, nls)
+            if not height_limit or minh < height_limit:
+                data[iz.pk] = True
+                inters.append({
+                        'zid' : iz.pk,
+                        'inter': json.loads(nls.json),
+                        'minh' : minh,
+                        'maxh' : maxh,
+                        'data_top' : floor,
+                        'data_bottom': ceiling,
+                        'indexes' : [path.project(Point(x)) for x in nls],
+                        })
         elif intersect.geom_typeid == 5: ## MultiLineString
-            intersect_merged = merge_touching_linestring(intersect)
+            intersect_merged =  merge_touching_linestring(intersect)
 
             for ls in intersect_merged:
                 nls = ls
-                floor, ceiling = get_zone_profile_along_path(iz, nls)
-
-                inters.append({
-                    'zid' : iz.pk,
-                    'inter': json.loads(nls.json),
-                    'data_top' : floor,
-                    'data_bottom': ceiling,
-                    'indexes' : [path.project(Point(x)) for x in nls],
-                    })
+                floor, ceiling, minh, maxh = get_zone_profile_along_path(iz, nls)
+                if not height_limit or minh < height_limit:
+                    data[iz.pk] = True
+                    inters.append({
+                            'zid' : iz.pk,
+                            'inter': json.loads(nls.json),
+                            'data_top' : floor,
+                            'data_bottom': ceiling,
+                            'minh' : minh,
+                            'maxh' : maxh,
+                            'indexes' : [path.project(Point(x)) for x in nls],
+                            })
         
-    return (data, inters)
+    return (data.keys(), inters)
 
 ## disable CSRF when debugging can help...
 ##@csrf_exempt
@@ -382,7 +394,7 @@ def json_track_upload( request ):
     ## use upload.name and not the filename as Django handles static files itself. We should
     ## use some var to get the STATIC root instead of 'static/' !
     ret_json = { 'success': success,
-                 'ZID' : json.loads(inter_space_ids),
+                 'ZID' : inter_space_ids,
                  'intersections' : intersections,
                  'relief_profile': relief_profile,
                  'indexes' : [track_geos.project(Point(x)) for x in track_geos],
@@ -400,6 +412,12 @@ def json_path_id_post(request):
     ls = []
     # take only first linestring...
     str_path = args.getlist("LS")[0]
+    height_limit = args.get("h-limit")
+    if not height_limit or height_limit == 0:
+        height_limit = None
+    else:
+        height_limit = int(height_limit)
+
     path = GEOSGeometry(str_path)
 
     interpolated_path = []
@@ -422,11 +440,11 @@ def json_path_id_post(request):
 
     indexes = [path.project(Point(x)) for x in interpolated_path]
 
-    inter_space_ids, intersections = get_space_intersect_path(LineString(interpolated_path))
+    inter_space_ids, intersections = get_space_intersect_path(LineString(interpolated_path), height_limit)
     relief_profile = get_relief_profile_along_track(interpolated_path)
     
     ret_json = {
-        'ZID' : json.loads(inter_space_ids),
+        'ZID' : inter_space_ids,
         'intersections' :intersections,
         'indexes': indexes,
         'interpolated' : geojson.geometry.LineString(interpolated_path),
@@ -473,8 +491,8 @@ def json_zones_by_name(request, name):
     try:
         zones = AirSpaces.objects.filter(name__icontains=name)
 
-        data = serializers.serialize('json', zones, fields=[])
-        return HttpResponse(data, mimetype='application/json')
+        data = [z.pk for z in zones]
+        return HttpResponse(json.dumps(data), mimetype='application/json')
 
         # js_spaces = geojson.FeatureCollection(list(zones))
         # s = geojson.dumps(js_spaces)
@@ -510,17 +528,17 @@ def jsonID_zone_bbox(request, lowlat, lowlon, highlat, highlon):
                          (float(lowlat), float(lowlon))))
     spaces = AirSpaces.objects.filter(geom__intersects=zone_bbox)
 
-    data = serializers.serialize('json', spaces, fields=[])
+    data = [z.pk for z in spaces]
 
-    return HttpResponse(data, mimetype='application/json')
+    return HttpResponse(json.dumps(data), mimetype='application/json')
 
 
 def jsonID_zone_point(request, lat, lon, radius):
     point = Point(float(lat), float(lon))
     spaces = AirSpaces.objects.filter(geom__distance_lte=(point, D(m=int(radius))))
 
-    data = serializers.serialize('json', spaces, fields=[])
-    return HttpResponse(data, mimetype='application/json')
+    data = [z.pk for z in spaces]
+    return HttpResponse(json.dumps(data), mimetype='application/json')
 
 
 def amap(request):

@@ -46,7 +46,9 @@
 	</form>
 
 	<form>
-	 Search radius in m for point selection (Shift+Ctrl click): <input type="text" id="radius-search" name="radius-search" value="5000" />
+	 Search radius in m for point selection : <input type="text" id="radius-search" name="radius-search" value="5000" />
+        <br />
+         Limit height to (filter out airspace above) : <input type="text" id="height-limit" name="height-limit" value="0" />m (0 : unlimited)
 	</form>
 
 	<div id="file-uploader">       
@@ -173,11 +175,7 @@
 	
             $.getJSON('/airspace/json/name/' + $('#name-query-id').val(), 
                       function(data) {
-                           var i = new Array();
-	                   $.each(data, function(index){
-                               i.push(data[index]['pk']);
-                           });
-	                   getAndDisplay(vectors, i);
+	                   getAndDisplay(vectors, data);
 
                       });
             return false;
@@ -188,11 +186,7 @@
             bounds = map.getExtent().transform(map.projection, map.displayProjection);
             $.getJSON('/airspace/json/bbox/id/' + bounds.toBBOX(), 
                       function(data) {
-                           var i = new Array();
-	                   $.each(data, function(index){
-                               i.push(data[index]['pk']);
-                           });
-	                   getAndDisplay(vectors, i);
+	                   getAndDisplay(vectors, data);
                       });
             return false;
         });
@@ -204,15 +198,12 @@
             $.post('/airspace/json/path/id/',
                    { 
                      'LS' : geojsonloader.write(path),
+                     'h-limit' : $('#height-limit').val(),
                      'csrfmiddlewaretoken' : global_csrf_token,
                    }, function(responseJSON) {
-                     var i = new Array();
-                     $.each(responseJSON.ZID, function(index){
-                       i.push(responseJSON.ZID[index]['pk']);
-                     });
 
                     // display crossed zones
-                    getAndDisplay(vectors, i);
+                    getAndDisplay(vectors, responseJSON.ZID);
                     
                     // handleChart(responseJSON.relief_profile, []);
                     trackDisplay(responseJSON, path);
@@ -225,11 +216,7 @@
              $('#spinner-ajax-load').show();
              $.getJSON('/airspace/json/point/id/' + point.x + ',' + point.y +',' + $('#radius-search').val(), 
                        function(data) {
-                           var i = new Array();
-                           $.each(data, function(index){
-                                i.push(data[index]['pk']);
-                           });
-	                   getAndDisplay(vectors, i);
+	                   getAndDisplay(vectors, data);
                         });
                     };
 
@@ -253,11 +240,7 @@
 
             $.getJSON('/airspace/json/bbox/id/' + bounds.toBBOX(), 
                       function(data) {
-                           var i = new Array();
-	                   $.each(data, function(index){
-                               i.push(data[index]['pk']);
-                           });
-	                   getAndDisplay(vectors, i);
+	                   getAndDisplay(vectors, data);
                       });
             return false;
         });
@@ -274,13 +257,9 @@
                    $('#spinner-ajax-load').hide();
                    return;
                }
-               var i = new Array();
-               $.each(responseJSON.ZID, function(index){
-                   i.push(responseJSON.ZID[index]['pk']);
-               });
 
                // display crossed zones
-               getAndDisplay(vectors, i);
+               getAndDisplay(vectors, responseJSON.ZID);
 
                trackDisplay(responseJSON);
             },
@@ -288,6 +267,7 @@
                'csrf_token': global_csrf_token,
                'csrf_name': 'csrfmiddlewaretoken',
                'csrf_xname': 'X-CSRFToken',
+               'h-limit' : $('#height-limit').val(),
            },
         } ) ;
 

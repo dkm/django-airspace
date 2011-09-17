@@ -301,6 +301,49 @@ function handleReliefChart(track_points, relief_profile, intersections, indexes,
 
     var x_max = indexes[indexes.length-1];
 
+
+    if (from_gps_track) {
+	plot_data.push({
+            data : track_points_resynced,
+            lines: { show: true }
+	});
+    }
+ 
+    plot_data.push({
+	data : relief_points,
+	lines: { show: true }
+    });
+
+
+    updateInterCount(intersections);
+    for (var i=0; i < intersections.length; i++){
+	mergeIndexInIntersection(intersections[i]);
+	var ptop = {
+	    data : intersections[i].data_top,
+	    id : "int" + i,
+	    lines : {show: true, fill: false}
+	};
+
+	var pbottom = {
+	    data : intersections[i].data_bottom,
+	    fillBetween: "int" + i,
+	    lines : {show: true, fill: true}
+	};
+        
+        if (y_max < intersections[i].maxh) {
+            y_max = intersections[i].maxh;
+        }
+
+        if (y_min > intersections[i].minh) {
+            y_min = minh;
+        }
+
+	plot_data.push(ptop);
+	plot_data.push(pbottom);
+
+	displayIntersection(intersections[i].inter);
+    }
+
     var plot_options = {
 //	selection: { mode: "x" },
 	zoom: { 
@@ -326,41 +369,10 @@ function handleReliefChart(track_points, relief_profile, intersections, indexes,
 	    zoomRange : [null, y_max-y_min],
 	    panRange : [y_min, y_max]
 	},
-    };   
+    };
 
     if (from_gps_track) {
 	plot_options.xaxis.ticks = xticks_data;
-	plot_data.push({
-            data : track_points_resynced,
-            lines: { show: true }
-	});
-    }
- 
-
-    plot_data.push({
-	data : relief_points,
-	lines: { show: true }
-    });
-
-    updateInterCount(intersections);
-    for (var i=0; i < intersections.length; i++){
-	mergeIndexInIntersection(intersections[i]);
-	var ptop = {
-	    data : intersections[i].data_top,
-	    id : "int" + i,
-	    lines : {show: true, fill: false}
-	};
-
-	var pbottom = {
-	    data : intersections[i].data_bottom,
-	    fillBetween: "int" + i,
-	    lines : {show: true, fill: true}
-	};
-
-	plot_data.push(ptop);
-	plot_data.push(pbottom);
-
-	displayIntersection(intersections[i].inter);
     }
 
     var plot = $.plot($("#chart-placeholder"),
