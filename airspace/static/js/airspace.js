@@ -230,16 +230,37 @@ function relief_chart_hover() {
 
 	var ratio = (pos_x-xmin)/(xmax-xmin);
 	var i = Math.floor(ratio * (chart_timeout_args.track_points.components.length-1));
-	
-	if (serie.data[i][0] >= pos_x) {
-	    for (; i > 0; i--) {
-		if (serie.data[i][0]<pos_x)
+        
+	if (serie.data[i][0] > pos_x && i > 0) {
+
+            var d_prev = Math.abs(serie.data[i][0] - pos_x);
+
+	    for (i--; i > 0; i--) {
+                var d_cur = Math.abs(serie.data[i][0] - pos_x);
+		if (serie.data[i][0] < pos_x) {
+                    if (d_prev < d_cur){
+                        i++;
+                    }
 		    break;
+                } else {
+                    d_prev = d_cur;
+                }
 	    }
-	} else {
-	    for (; i < serie.data.length; i++) {
-		if (serie.data[i][0]>pos_x)
+
+	} else if (i < serie.data.lenght) {
+            var d_prev = Math.abs(pos_x - serie.data[i][0]);
+
+	    for (i++; i < serie.data.length; i++) {
+                var d_cur = Math.abs(pos_x - serie.data[i][0]);
+
+		if (serie.data[i][0] > pos_x){
+                    if (d_prev < d_cur) {
+                        i--;
+                    }
 		    break;
+                } else {
+                    d_prev = d_cur;
+                }
 	    }
 	}
 
