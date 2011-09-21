@@ -173,7 +173,7 @@ def get_spec_alt(spec, point):
         elif 'ref' in spec:
             if spec['ref'] == 'AMSL':
                 c = int(spec['basealti'])
-            elif spec['ref'] == 'AGL':
+            elif spec['ref'] in ('AGL', 'ASFC') :
                 h = ossim.height(point[1], point[0])
                 c = h[1] + spec['basealti']
             elif spec['ref'] == 'SFC':
