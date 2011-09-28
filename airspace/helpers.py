@@ -5,6 +5,8 @@ import ossim
 
 from django.contrib.gis.geos import Point, LineString, MultiLineString
 
+ossim.init('XXX/ossim_preferences_template')
+
 def loadFromGpx(gpxfilename, detectProjection=True):
     """
     From a GPX, loads all lines/multilines and returns a single
@@ -110,7 +112,6 @@ def get_relief_profile_along_track(track):
     """
     track should be a list of coord.
     """
-    ossim.init('XXX/ossim_preferences_template')
 
     relief_profile = []
     # pnt = GEOSGeometry(track)
@@ -128,7 +129,7 @@ def get_ceiling_floor_at_point(airspace, point):
     ceil,floor = None, None
 
     if airspace.ceil_fl != -1:
-        ceil =  airspace.ceil_fl * 100 * 0.3048
+        ceil = airspace.ceil_fl * 100 * 0.3048
     elif airspace.ceil_ref and airspace.ceil_ref == 'AGL':
         try:
             h = ossim.height(point[1], point[0])
@@ -140,19 +141,20 @@ def get_ceiling_floor_at_point(airspace, point):
         ceil = airspace.ceil_alti_m
     elif airspace.ceil_unl:
         ceil = 100000
-
+    else:
+        print "unexpected ceil spec for", airspace
 
     if airspace.flr_fl != -1:
-        flr =  airspace.flr_fl * 100 * 0.3048
+        floor = airspace.flr_fl * 100 * 0.3048
     elif airspace.flr_ref and airspace.flr_ref == 'AGL':
         try:
             h = ossim.height(point[1], point[0])
-            flr = airspace.flr_alti_m + h[1]
+            floor = airspace.flr_alti_m + h[1]
         except:
             ## most probably: no ground info :(
-            flr = 0
+            floor = 0
     elif airspace.flr_ref and airspace.flr_ref == 'AMSL':
-        flr = airspace.flr_alti_m
+        floor = airspace.flr_alti_m
     elif airspace.flr_f_sfc:
         try:
             h = ossim.height(point[1], point[0])
@@ -160,6 +162,8 @@ def get_ceiling_floor_at_point(airspace, point):
         except:
             ## most probably: no gound info :'(
             floor = 0
+    else:
+        print "unexpected floor spec for", airspace
     
     return (ceil,floor)
 
@@ -178,7 +182,6 @@ def get_zone_profile_along_path(airspace, path):
         if c > maxh:
             maxh = c
     return (floor, ceiling, minh, maxh)
-
 
 def merge(ML):
     if len(ML) == 1:

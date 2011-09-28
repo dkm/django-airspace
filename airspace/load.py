@@ -11,13 +11,14 @@ airspaces_mapping = {
     'ceil_ref' : 'CEIL_REF',
     'ceil_f_sfc' : 'CEIL_F_SFC',
     'ceil_unl' : 'CEIL_UNL',
+    'ceil_fl' : 'CEIL_FL',
 
     'flr_alti' : 'FLR_ALTI',
     'flr_alti_m' : 'FLR_ALTIM',
     'flr_ref' : 'FLR_REF',
     'flr_f_sfc' : 'FLR_F_SFC',
     'flr_unl' : 'FLR_UNL',
-
+    'flr_fl' : 'FLR_FL',
     'start_date' : 'START_DATE',
     'stop_date' : 'STOP_DATE'
 }
@@ -326,11 +327,11 @@ class LayerMapping(object):
             else:
                 # Otherwise, verify OGR Field type.
                 val = self.verify_ogr_field(feat[ogr_name], model_field)
-
+##            print "val:", val, " for ", ogr_name
             # Setting the keyword arguments for the field name with the
             # value obtained above.
             kwargs[field_name] = val
-
+        
         return kwargs
 
     def unique_kwargs(self, kwargs):
@@ -396,6 +397,9 @@ class LayerMapping(object):
                 val = int(ogr_field.value)
             except:
                 raise InvalidInteger('Could not construct integer from: %s' % ogr_field.value)
+        elif isinstance(ogr_field, OFTInteger) and isinstance(model_field, models.BooleanField):
+            vali = int(ogr_field.value)
+            val = (vali != 0)
         else:
             val = ogr_field.value
         return val
@@ -626,10 +630,6 @@ class LayerMapping(object):
         else:
             # Otherwise, just calling the previously defined _save() function.
             _save()
-
-
-
-
 
 
 airspace_shp = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data/layer.shp'))
