@@ -14,12 +14,14 @@ class AirSpaces(models.Model):
 
     ceil_alti = models.CharField(max_length=10)
     ceil_alti_m = models.FloatField()
+    ceil_fl = models.IntegerField(default=-1)
     ceil_ref = models.CharField(max_length=4)
     ceil_f_sfc = models.BooleanField()
     ceil_unl = models.BooleanField()
 
     flr_alti = models.CharField(max_length=10)
     flr_alti_m = models.FloatField()
+    flr_fl = models.IntegerField(default=-1)
     flr_ref = models.CharField(max_length=4)
     flr_f_sfc = models.BooleanField()
     flr_unl = models.BooleanField()
@@ -75,4 +77,4 @@ class AirSpaces(models.Model):
     
     # Returns the string representation of the model.
     def __unicode__(self):
-        return self.name
+        return '/'.join([self.name, str(self.start_date), str(self.stop_date), self.clazz, self.ceil_alti, str(self.ceil_alti_m), self.ceil_ref, str(self.ceil_f_sfc), str(self.ceil_unl), self.flr_alti, str(self.flr_alti_m), self.flr_ref, str(self.flr_f_sfc), str(self.flr_unl)])
