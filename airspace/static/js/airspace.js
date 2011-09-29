@@ -475,31 +475,39 @@ styleMap.addUniqueValueRules("default", "class", classStyleLookup);
 var displayed = {};
 
 
-function zoneSpecToString(specs){
+function zoneSpecToString(spec){
     var str = "";
 
-    for (var i=0; i < specs.length; i++){
-        var spec = specs[i];
-        
-        if (spec.flevel){
-            str += "FL"+spec.flevel + ' (' + (spec.flevel*100/3.2808399).toFixed(0) + 'm)';
-        } else if (spec.ref){
-            if (spec.ref == 'AMSL') {
-                str += spec.basealti + 'm (' +  (3.2808399 * spec.basealti).toFixed(0) + 'ft)';
-            } else if (spec.ref == 'AGL' || spec.ref == 'ASFC') {
-                str += spec['basealti'] + 'AGL';
-            } else if (spec.ref == 'SFC') {
-                str += "SFC";
-            }
+    if (spec.flevel){
+        str += "FL"+spec.flevel + ' (' + (spec.flevel * 100 * 0.3048).toFixed(0) + 'm)';
+    } else if (spec.ref){
+        if (spec.ref == 'AMSL') {
+	    if (spec.unit == "M"){
+                str += spec.alti + 'm (' +  (spec.alti / 0.3048).toFixed(0) + 'ft)';
+	    } else {
+		str += (spec.alti * 0.3048).toFixed(0) + 'm (' +  (spec.alti).toFixed(0) + 'ft)';
+	    }
+        } else if (spec.ref == 'AGL' || spec.ref == 'ASFC') {
+            str += spec['alti'] + spec['unit'] + ' AGL';
         }
+    } else if (spec.sfc) {
+	str += "SFC";
+    } else if (spec.unl) {
+	str += "UNLIMITED";
     }
+
     return str;
-}
+} 
 
 function displayZoneInfo(feature) {
     var info = '<fieldset><legend>' +feature.attributes['name'] + '</legend>';
     info += '<ul>';
     info += '<li>Class: ' + feature.attributes['class'] + '</li>';
+    info += '<li>Creation date (currently wrong): ' + feature.attributes['start_date'] + '</li>';
+    info += '<li>Deletion date (currently wrong): ' + feature.attributes['stop_date'] + '</li>';
+    if (feature.attributes['ext_info'] != ""){
+        info += '<li>Extra info: ' + feature.attributes['ext_info'] + '</li>';
+    }
     info += '<li>Floor spec: ' + zoneSpecToString(feature.attributes['floor']) + '</li>';
     info += '<li>Ceiling spec: ' + zoneSpecToString(feature.attributes['ceiling']) + '</li>';
     info += '</li></fieldset>';
