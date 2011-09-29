@@ -42,10 +42,12 @@ class AirSpaces(models.Model):
                             'start_date' : self.start_date.strftime("%Y-%m-%d %H:%M"),
                             'stop_date' : self.stop_date.strftime("%Y-%m-%d %H:%M"),
                             'class': self.clazz,
+                            'ext_info' : self.ext_info,
                             'ceiling': {},
                             'floor': {}
                             }, 
-             'geometry': geojson.loads(self.geom.json)}
+             'geometry': geojson.loads(self.geom.json)
+             }
 
         if self.ceil_alti.strip():
             f['properties']['ceiling']['alti'] = float(self.ceil_alti.split()[0])
@@ -54,8 +56,11 @@ class AirSpaces(models.Model):
         if self.ceil_ref.strip():
             f['properties']['ceiling']['ref'] = self.ceil_ref.strip()
 
+        if self.ceil_fl != -1:
+            f['properties']['ceiling']['flevel'] = self.ceil_fl
+
         if self.ceil_f_sfc:
-            f['properties']['ceiling']['asfc'] = True
+            f['properties']['ceiling']['sfc'] = True
 
         if self.ceil_unl:
             f['properties']['ceiling']['unl'] = True
@@ -67,8 +72,11 @@ class AirSpaces(models.Model):
         if self.flr_ref.strip():
             f['properties']['floor']['ref'] = self.flr_ref.strip()
 
+        if self.flr_fl != -1:
+            f['properties']['floor']['flevel'] = self.flr_fl
+            
         if self.flr_f_sfc:
-            f['properties']['floor']['asfc'] = True
+            f['properties']['floor']['sfc'] = True
 
         if self.flr_unl:
             f['properties']['floor']['unl'] = True
