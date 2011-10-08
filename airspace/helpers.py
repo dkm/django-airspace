@@ -134,7 +134,6 @@ def get_relief_profile_along_track(track):
     """
 
     relief_profile = []
-    # pnt = GEOSGeometry(track)
     for p in track:
         h = ossim.height(p[1], p[0])
             ## if data not available, default to 0
@@ -245,36 +244,23 @@ def get_space_intersect_path(path, height_limit=None):
         intersect = path.intersection(iz.geom)
        
         if intersect.geom_typeid == 1: ## LineString
-            nls = intersect
-            
+            intersects = [intersect]
+        elif intersect.geom_typeid == 5: ## MultiLineString
+            intersects =  merge_touching_linestring(intersect)
+
+        for ls in intersects:
+            nls = ls
             floor, ceiling, minh, maxh = get_zone_profile_along_path(iz, nls)
             if not height_limit or minh < height_limit:
                 data[iz.pk] = True
                 inters.append({
                         'zid' : iz.pk,
                         'inter': json.loads(nls.json),
-                        'minh' : minh,
-                        'maxh' : maxh,
                         'data_top' : floor,
                         'data_bottom': ceiling,
+                        'minh' : minh,
+                        'maxh' : maxh,
                         'indexes' : [path.project(Point(x)) for x in nls],
                         })
-        elif intersect.geom_typeid == 5: ## MultiLineString
-            intersect_merged =  merge_touching_linestring(intersect)
-
-            for ls in intersect_merged:
-                nls = ls
-                floor, ceiling, minh, maxh = get_zone_profile_along_path(iz, nls)
-                if not height_limit or minh < height_limit:
-                    data[iz.pk] = True
-                    inters.append({
-                            'zid' : iz.pk,
-                            'inter': json.loads(nls.json),
-                            'data_top' : floor,
-                            'data_bottom': ceiling,
-                            'minh' : minh,
-                            'maxh' : maxh,
-                            'indexes' : [path.project(Point(x)) for x in nls],
-                            })
         
     return (data.keys(), inters)
