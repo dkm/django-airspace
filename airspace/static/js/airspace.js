@@ -483,12 +483,16 @@ function zoneSpecToString(spec){
     } else if (spec.ref){
         if (spec.ref == 'AMSL') {
 	    if (spec.unit == "M"){
-                str += spec.alti + 'm (' +  (spec.alti / 0.3048).toFixed(0) + 'ft)';
+                str += spec.alti + 'm AMSL (' +  (spec.alti / 0.3048).toFixed(0) + 'ft)';
 	    } else {
 		str += (spec.alti * 0.3048).toFixed(0) + 'm (' +  (spec.alti).toFixed(0) + 'ft)';
 	    }
         } else if (spec.ref == 'AGL' || spec.ref == 'ASFC') {
-            str += spec['alti'] + spec['unit'] + ' AGL';
+	    if (spec.unit == "M"){
+                str += spec.alti + 'm AGL (' +  (spec.alti / 0.3048).toFixed(0) + 'ft)';
+	    } else {
+		str += (spec.alti * 0.3048).toFixed(0) + 'm AGL (' +  (spec.alti).toFixed(0) + 'ft)';
+	    }
         }
     } else if (spec.sfc) {
 	str += "SFC";
