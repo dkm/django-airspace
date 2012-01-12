@@ -72,8 +72,8 @@ var inter_layer_style = new OpenLayers.StyleMap({
 // This is also the style used for the marker.
 var track_layer_style = new OpenLayers.StyleMap({
     // Set the external graphic and background graphic images.
-    externalGraphic: 'http://' + document.location.host + static_root + "img/marker-gold.png",
-    backgroundGraphic: 'http://' + document.location.host + static_root + "img/marker_shadow.png",
+    externalGraphic: 'http://' + document.location.host + static_root + "lib/img/marker-gold.png",
+    backgroundGraphic: 'http://' + document.location.host + static_root + "lib/img/marker_shadow.png",
 
     // Makes sure the background graphic is placed correctly relative
     // to the external graphic.
