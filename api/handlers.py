@@ -8,11 +8,11 @@ class AirSpacesHandler(BaseHandler):
     allowed_methods = ( 'GET', )
     model = AirSpaces
 
-    def read(self, request, airspace_id=None, airspace_ids=None):
+    def read(self, request, airspace_ids=None):
         base = AirSpaces.objects
         
-        if airspace_id:
-            return base.get(pk=airspace_id)
+        if airspace_ids and len(airspace_ids.split(',')) == 1:
+            return base.get(pk=airspace_ids.split(',')[0])
         elif airspace_ids:
             ids = airspace_ids.strip().split(',')
             spaces = []
