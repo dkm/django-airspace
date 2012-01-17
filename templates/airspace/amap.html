@@ -35,7 +35,7 @@
 </head> 
   <body> 
         <!-- <form id="debug"><input type="submit" name"debug"/> </form> -->
-	<div id="spinner-ajax-load"></div>
+
 	<form id="name-query">
 	  <input type="text" id="name-query-id" name="name-query-search" />
 	  <input type="submit" name="name-query" value="Find Airspace"/>
@@ -45,6 +45,8 @@
 	  <input type="submit" name="debug" value="Update Visible Airspace"/>
 	</form>
 
+        <div id="map" class="smallmap"></div>
+	<div id="spinner-ajax-load"></div>
 	<form>
 	 Search radius in m for point selection : <input type="text" id="radius-search" name="radius-search" value="5000" />
         <br />
@@ -78,7 +80,7 @@
             </li> 
         </ul>
 
-        <div id="map" class="smallmap"></div>
+
 
 	<div id="highlighted"></div> 
 	<div id="info"></div> 
