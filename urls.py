@@ -38,4 +38,7 @@ urlpatterns = patterns('',
     url(r'^airspace/amap/', 'airspace.views.amap'),
     # Uncomment the next line to enable the admin:
     url(r'^admin/', include(admin.site.urls)),
+
+    ## For django-piston
+    (r'^api/', include('api.urls')),                       
 )
