@@ -5,6 +5,10 @@ from django.views.generic import ListView
 
 from airspace.models import AirSpaces
 
+from airspace.api import AirSpacesResource
+
+airspaces_resource = AirSpacesResource()
+
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
 admin.autodiscover()
@@ -40,5 +44,8 @@ urlpatterns = patterns('',
     url(r'^admin/', include(admin.site.urls)),
 
     ## For django-piston
-    (r'^api/', include('api.urls')),                       
+    (r'^api/', include('api.urls')),
+
+    ## For django-tastypie
+    (r'^api2/', include(airspaces_resource.urls)),
 )
