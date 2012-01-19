@@ -20,9 +20,52 @@
 
 from tastypie.resources import ModelResource
 from models import AirSpaces
+from django.conf.urls.defaults import *
+from tastypie.utils import trailing_slash
+from django.http import Http404
 
+from django.contrib.gis.geos import Polygon
+import re
 
 class AirSpacesResource(ModelResource):
     class Meta:
         queryset = AirSpaces.objects.all()
         resource_name = 'airspaces'
+
+    def override_urls(self):
+        return [
+            url(r"^(?P<resource_name>%s)/bbox%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_bbox'), name="api_get_bbox"),
+            ]
+
+    def get_bbox(self, request, **kwargs):
+        self.method_check(request, allowed=['get'])
+        self.is_authenticated(request)
+        self.throttle_check(request)
+        q = request.GET.get('q', '').strip()
+
+        m = re.match('(?P<lowlat>-?[\d\.]+),(?P<lowlon>-?[\d\.]+),(?P<highlat>-?[\d\.]+),(?P<highlon>-?[\d\.]+)', q)
+
+        if not m:
+            raise Http404("Sorry, no results on that page.")
+
+        lowlat = float(m.group('lowlat'))
+        lowlon = float(m.group('lowlon'))
+        highlon = float(m.group('highlon'))
+        highlat = float(m.group('highlat'))
+        
+        zone_bbox = Polygon(((lowlon, lowlat),
+                             (highlon, lowlat),
+                             (highlon, highlat),
+                             (lowlon, highlat),
+                             (lowlon, lowlat)))
+
+        spaces = AirSpaces.objects.filter(geom__intersects=zone_bbox)
+
+        objects = []
+        for result in spaces:
+            bundle = self.build_bundle(obj=result, request=request)
+            bundle = self.full_dehydrate(bundle)
+            objects.append(bundle)
+            
+        self.log_throttled_access(request)
+        return self.create_response(request, objects)
