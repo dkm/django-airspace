@@ -35,16 +35,14 @@ class AirSpacesResource(ModelResource):
 
     def override_urls(self):
         return [
+            url(r"^(?P<resource_name>%s)/bbox/ids%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_bbox_ids'), name="api_get_bbox_ids"),
             url(r"^(?P<resource_name>%s)/bbox%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_bbox'), name="api_get_bbox"),
             url(r"^(?P<resource_name>%s)/point%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_point'), name="api_get_point"),
             ]
 
-    def get_bbox(self, request, **kwargs):
-        self.method_check(request, allowed=['get'])
-        self.is_authenticated(request)
-        self.throttle_check(request)
-        q = request.GET.get('q', '').strip()
 
+    def _internal_get_bbox_AS(self, request, **kwargs):
+        q = request.GET.get('q', '').strip()
         m = re.match('(?P<lowlat>-?[\d\.]+),(?P<lowlon>-?[\d\.]+),(?P<highlat>-?[\d\.]+),(?P<highlon>-?[\d\.]+)', q)
 
         if not m:
@@ -62,6 +60,28 @@ class AirSpacesResource(ModelResource):
                              (lowlon, lowlat)))
 
         spaces = AirSpaces.objects.filter(geom__intersects=zone_bbox)
+        
+        return spaces
+
+    def get_bbox_ids(self, request, **kwargs):
+        self.method_check(request, allowed=['get'])
+        self.is_authenticated(request)
+        self.throttle_check(request)
+
+        spaces = self._internal_get_bbox_AS(request, **kwargs)
+
+        objects = [i.pk for i in spaces]
+            
+        self.log_throttled_access(request)
+        return self.create_response(request, objects)
+
+
+    def get_bbox(self, request, **kwargs):
+        self.method_check(request, allowed=['get'])
+        self.is_authenticated(request)
+        self.throttle_check(request)
+
+        spaces = self._internal_get_bbox_AS(request, **kwargs)
 
         objects = []
         for result in spaces:
