@@ -24,7 +24,8 @@ from django.conf.urls.defaults import *
 from tastypie.utils import trailing_slash
 from django.http import Http404
 
-from django.contrib.gis.geos import Polygon
+from django.contrib.gis.measure import Distance, D
+from django.contrib.gis.geos import Polygon, Point
 import re
 
 class AirSpacesResource(ModelResource):
@@ -35,6 +36,7 @@ class AirSpacesResource(ModelResource):
     def override_urls(self):
         return [
             url(r"^(?P<resource_name>%s)/bbox%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_bbox'), name="api_get_bbox"),
+            url(r"^(?P<resource_name>%s)/point%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_point'), name="api_get_point"),
             ]
 
     def get_bbox(self, request, **kwargs):
@@ -60,6 +62,35 @@ class AirSpacesResource(ModelResource):
                              (lowlon, lowlat)))
 
         spaces = AirSpaces.objects.filter(geom__intersects=zone_bbox)
+
+        objects = []
+        for result in spaces:
+            bundle = self.build_bundle(obj=result, request=request)
+            bundle = self.full_dehydrate(bundle)
+            objects.append(bundle)
+            
+        self.log_throttled_access(request)
+        return self.create_response(request, objects)
+
+    def get_point(self, request, **kwargs):
+        self.method_check(request, allowed=['get'])
+        self.is_authenticated(request)
+        self.throttle_check(request)
+
+        q = request.GET.get('q', '').strip()
+        r = request.GET.get('r', '').strip()
+        
+        mq = re.match('(?P<lat>-?[\d\.]+),(?P<lon>-?[\d\.]+)', q)
+        mr = re.match('(?P<radius>\d+)', r)
+
+        if not mr:
+            radius = 1000
+        else:
+            radius = int(mr.group('radius'))
+
+        point = Point(float(mq.group('lon')), float(mq.group('lat')))
+        
+        spaces = AirSpaces.objects.filter(geom__distance_lte=(point, D(m=radius)))
 
         objects = []
         for result in spaces:
