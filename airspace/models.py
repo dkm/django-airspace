@@ -33,54 +33,58 @@ class AirSpaces(models.Model):
     class Meta:
         verbose_name_plural = "Air Spaces"
 
+    def get_properties(self):
+        f = {'id':self.id,
+             'name': self.name,
+             'start_date' : self.start_date.strftime("%Y-%m-%d %H:%M"),
+             'stop_date' : self.stop_date.strftime("%Y-%m-%d %H:%M"),
+             'class': self.clazz,
+             'ext_info' : self.ext_info,
+             'ceiling': {},
+             'floor': {}
+             }
+        
+        if self.ceil_alti.strip():
+            f['ceiling']['alti'] = float(self.ceil_alti.split()[0])
+            f['ceiling']['unit'] = self.ceil_alti.split()[1].strip()
+
+        if self.ceil_ref.strip():
+            f['ceiling']['ref'] = self.ceil_ref.strip()
+
+        if self.ceil_fl != -1:
+            f['ceiling']['flevel'] = self.ceil_fl
+
+        if self.ceil_f_sfc:
+            f['ceiling']['sfc'] = True
+
+        if self.ceil_unl:
+            f['ceiling']['unl'] = True
+        
+        if self.flr_alti.strip():
+            f['floor']['alti'] = float(self.flr_alti.split()[0])
+            f['floor']['unit'] = self.flr_alti.split()[1].strip()
+
+        if self.flr_ref.strip():
+            f['floor']['ref'] = self.flr_ref.strip()
+
+        if self.flr_fl != -1:
+            f['floor']['flevel'] = self.flr_fl
+            
+        if self.flr_f_sfc:
+            f['floor']['sfc'] = True
+
+        if self.flr_unl:
+            f['floor']['unl'] = True
+
+        return f
+        
     @property
     def __geo_interface__(self):
         f = {'type': 'Feature',
              'id' : self.id,
-             'properties': {'id':self.id,
-                            'name': self.name,
-                            'start_date' : self.start_date.strftime("%Y-%m-%d %H:%M"),
-                            'stop_date' : self.stop_date.strftime("%Y-%m-%d %H:%M"),
-                            'class': self.clazz,
-                            'ext_info' : self.ext_info,
-                            'ceiling': {},
-                            'floor': {}
-                            }, 
+             'properties': self.get_properties(), 
              'geometry': geojson.loads(self.geom.json)
              }
-
-        if self.ceil_alti.strip():
-            f['properties']['ceiling']['alti'] = float(self.ceil_alti.split()[0])
-            f['properties']['ceiling']['unit'] = self.ceil_alti.split()[1].strip()
-
-        if self.ceil_ref.strip():
-            f['properties']['ceiling']['ref'] = self.ceil_ref.strip()
-
-        if self.ceil_fl != -1:
-            f['properties']['ceiling']['flevel'] = self.ceil_fl
-
-        if self.ceil_f_sfc:
-            f['properties']['ceiling']['sfc'] = True
-
-        if self.ceil_unl:
-            f['properties']['ceiling']['unl'] = True
-        
-        if self.flr_alti.strip():
-            f['properties']['floor']['alti'] = float(self.flr_alti.split()[0])
-            f['properties']['floor']['unit'] = self.flr_alti.split()[1].strip()
-
-        if self.flr_ref.strip():
-            f['properties']['floor']['ref'] = self.flr_ref.strip()
-
-        if self.flr_fl != -1:
-            f['properties']['floor']['flevel'] = self.flr_fl
-            
-        if self.flr_f_sfc:
-            f['properties']['floor']['sfc'] = True
-
-        if self.flr_unl:
-            f['properties']['floor']['unl'] = True
-                
         return f
     
     # Returns the string representation of the model.

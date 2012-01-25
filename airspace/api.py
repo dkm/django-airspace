@@ -18,21 +18,109 @@
 #   License along with this program.  If not, see
 #   <http://www.gnu.org/licenses/>.
 
-from tastypie.resources import ModelResource
 from models import AirSpaces
-from django.conf.urls.defaults import *
-from tastypie.utils import trailing_slash
-from django.http import Http404
 
+from tastypie.resources import ModelResource
+from tastypie.fields import ApiField, DictField, CharField
+from tastypie.utils import trailing_slash
+
+from django.conf.urls.defaults import *
+from django.http import Http404
 from django.contrib.gis.measure import Distance, D
 from django.contrib.gis.geos import Polygon, Point
+
 import re
 
+# for serialization
+from django.utils import simplejson
+import geojson
+from tastypie.serializers import Serializer
+
+class GeoJSONSerializer(Serializer):
+    """
+    GeoJSON Serializer that wraps geojson add GeoDjango serializers
+    for building FeatureCollection when needed. Catches lists of features
+    and wraps them in a FeatureCollection before serializing.
+    """
+
+    def to_json(self, data, options=None):
+        options = options or {}
+
+        try:
+            if type(data) == dict and 'objects' in data:
+                data = data['objects']
+            
+            if type(data) == list and data:
+                # we may have a *Collection
+                t = data[0].obj.__geo_interface__
+                
+                if "type" in t :
+                    if t['type'] == "Feature":
+                        # data items are Feature Objects.
+                        features = []
+                        for f in data:
+                            f_dict = f.obj.__geo_interface__
+                            features.append(f_dict)
+                        s = geojson.FeatureCollection(features)
+                    elif t['type'] in ( "Point", "MultiPoint",
+                                        "LineString", "MultiLineString",
+                                        "Polygon", "MultiPolygon",
+                                        "GeometryCollection"):
+                        s = geojson.GeometryCollection(data.obj)
+            else:
+                return super(GeoJSONSerializer, self).to_json(data, options)
+            return geojson.dumps(s)
+        except Exception as e:
+            # fallback to default serialization.
+            return super(GeoJSONSerializer, self).to_json(data, options)
+
+    ## this is untested and currently unused.
+    # def from_json(self, content):
+    #     return geojson.loads(content)
+
+    
+class GeometryField(ApiField):
+    """
+    Custom ApiField for dealing with data from GeometryFields.
+    """
+    dehydrated_type = 'geometry'
+    help_text = 'Geometry data.'
+    
+    def dehydrate(self, obj):
+        return self.convert(super(GeometryField, self).dehydrate(obj))
+    
+    def convert(self, value):
+        if value is None:
+            return None
+
+        if isinstance(value, dict):
+            return value
+
+        # Get ready-made geojson serialization and then convert it _back_ to a Python object
+        # so that Tastypie can serialize it as part of the bundle
+        return simplejson.loads(value.geojson)
+
 class AirSpacesResource(ModelResource):
+    geometry = GeometryField(attribute="geom")
+    properties = DictField(attribute="get_properties")
+
+    # this default to a feature. Beware when returning multiple objects.
+    type = CharField(default="Feature")
+
     class Meta:
         queryset = AirSpaces.objects.all()
         resource_name = 'airspaces'
+        serializer = GeoJSONSerializer()
 
+        # these are wrapped by the 'properties' attribute above.
+        excludes = ['name', 'start_date', 'stop_date',
+                    'clazz', 'ext_info', 
+                    'geom',
+                    'ext_info',
+                    'ceil_alti', 'ceil_alti_m', 'ceil_fl', 'ceil_ref', 'ceil_f_sfc', 'ceil_unl',
+                    'flr_alti', 'flr_alti_m', 'flr_fl', 'flr_ref', 'flr_f_sfc', 'flr_unl' ]
+
+        
     def override_urls(self):
         return [
             url(r"^(?P<resource_name>%s)/bbox/ids%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_bbox_ids'), name="api_get_bbox_ids"),
