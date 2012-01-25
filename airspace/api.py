@@ -36,6 +36,30 @@ from django.utils import simplejson
 import geojson
 from tastypie.serializers import Serializer
 
+
+def _internal_get_bbox_AS(request, **kwargs):
+    q = request.GET.get('q', '').strip()
+    m = re.match('(?P<lowlat>-?[\d\.]+),(?P<lowlon>-?[\d\.]+),(?P<highlat>-?[\d\.]+),(?P<highlon>-?[\d\.]+)', q)
+
+    if not m:
+        raise Http404("Sorry, no results on that page.")
+
+    lowlat = float(m.group('lowlat'))
+    lowlon = float(m.group('lowlon'))
+    highlon = float(m.group('highlon'))
+    highlat = float(m.group('highlat'))
+        
+    zone_bbox = Polygon(((lowlon, lowlat),
+                         (highlon, lowlat),
+                         (highlon, highlat),
+                         (lowlon, highlat),
+                         (lowlon, lowlat)))
+
+    spaces = AirSpaces.objects.filter(geom__intersects=zone_bbox)
+        
+    return spaces
+
+
 class GeoJSONSerializer(Serializer):
     """
     GeoJSON Serializer that wraps geojson add GeoDjango serializers
@@ -100,6 +124,7 @@ class GeometryField(ApiField):
         # so that Tastypie can serialize it as part of the bundle
         return simplejson.loads(value.geojson)
 
+
 class AirSpacesResource(ModelResource):
     geometry = GeometryField(attribute="geom")
     properties = DictField(attribute="get_properties")
@@ -123,59 +148,29 @@ class AirSpacesResource(ModelResource):
         
     def override_urls(self):
         return [
-            url(r"^(?P<resource_name>%s)/bbox/ids%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_bbox_ids'), name="api_get_bbox_ids"),
+            # url(r"^(?P<resource_name>%s)/bbox/ids%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_bbox_ids'), name="api_get_bbox_ids"),
             url(r"^(?P<resource_name>%s)/bbox%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_bbox'), name="api_get_bbox"),
             url(r"^(?P<resource_name>%s)/point%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_point'), name="api_get_point"),
             ]
-
-
-    def _internal_get_bbox_AS(self, request, **kwargs):
-        q = request.GET.get('q', '').strip()
-        m = re.match('(?P<lowlat>-?[\d\.]+),(?P<lowlon>-?[\d\.]+),(?P<highlat>-?[\d\.]+),(?P<highlon>-?[\d\.]+)', q)
-
-        if not m:
-            raise Http404("Sorry, no results on that page.")
-
-        lowlat = float(m.group('lowlat'))
-        lowlon = float(m.group('lowlon'))
-        highlon = float(m.group('highlon'))
-        highlat = float(m.group('highlat'))
-        
-        zone_bbox = Polygon(((lowlon, lowlat),
-                             (highlon, lowlat),
-                             (highlon, highlat),
-                             (lowlon, highlat),
-                             (lowlon, lowlat)))
-
-        spaces = AirSpaces.objects.filter(geom__intersects=zone_bbox)
-        
-        return spaces
-
-    def get_bbox_ids(self, request, **kwargs):
-        self.method_check(request, allowed=['get'])
-        self.is_authenticated(request)
-        self.throttle_check(request)
-
-        spaces = self._internal_get_bbox_AS(request, **kwargs)
-
-        objects = [i.pk for i in spaces]
-            
-        self.log_throttled_access(request)
-        return self.create_response(request, objects)
-
 
     def get_bbox(self, request, **kwargs):
         self.method_check(request, allowed=['get'])
         self.is_authenticated(request)
         self.throttle_check(request)
 
-        spaces = self._internal_get_bbox_AS(request, **kwargs)
+        onlyids = request.GET.get('onlyids', False)
+        
+        spaces = _internal_get_bbox_AS(request, **kwargs)
 
         objects = []
-        for result in spaces:
-            bundle = self.build_bundle(obj=result, request=request)
-            bundle = self.full_dehydrate(bundle)
-            objects.append(bundle)
+        if onlyids :
+            for result in spaces:
+                objects.append(result.pk)
+        else:
+            for result in spaces:
+                bundle = self.build_bundle(obj=result, request=request)
+                bundle = self.full_dehydrate(bundle)
+                objects.append(bundle)
             
         self.log_throttled_access(request)
         return self.create_response(request, objects)
@@ -187,7 +182,8 @@ class AirSpacesResource(ModelResource):
 
         q = request.GET.get('q', '').strip()
         r = request.GET.get('r', '').strip()
-        
+        onlyids = request.GET.get('onlyids', False)
+
         mq = re.match('(?P<lat>-?[\d\.]+),(?P<lon>-?[\d\.]+)', q)
         mr = re.match('(?P<radius>\d+)', r)
 
@@ -201,10 +197,16 @@ class AirSpacesResource(ModelResource):
         spaces = AirSpaces.objects.filter(geom__distance_lte=(point, D(m=radius)))
 
         objects = []
-        for result in spaces:
-            bundle = self.build_bundle(obj=result, request=request)
-            bundle = self.full_dehydrate(bundle)
-            objects.append(bundle)
+
+        objects = []
+        if onlyids :
+            for result in spaces:
+                objects.append(result.pk)
+        else:
+            for result in spaces:
+                bundle = self.build_bundle(obj=result, request=request)
+                bundle = self.full_dehydrate(bundle)
+                objects.append(bundle)
             
         self.log_throttled_access(request)
         return self.create_response(request, objects)

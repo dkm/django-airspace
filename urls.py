@@ -5,9 +5,11 @@ from django.views.generic import ListView
 
 from airspace.models import AirSpaces
 
+from tastypie.api import Api
 from airspace.api import AirSpacesResource
 
-airspaces_resource = AirSpacesResource()
+v2_api = Api(api_name='v2')
+v2_api.register(AirSpacesResource())
 
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
@@ -47,5 +49,5 @@ urlpatterns = patterns('',
     (r'^api/', include('api.urls')),
 
     ## For django-tastypie
-    (r'^api2/', include(airspaces_resource.urls)),
+    (r'^api2/', include(v2_api.urls)),
 )
