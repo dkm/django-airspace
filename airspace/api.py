@@ -160,7 +160,7 @@ class AbstractAirSpacesResource(ModelResource):
         self.is_authenticated(request)
         self.throttle_check(request)
 
-        # q = request.GET.get('q', '').strip()
+        q = request.GET.get('q', '').strip()
         r = request.GET.get('r', '').strip()
         # onlyids = request.GET.get('onlyids', False)
 
