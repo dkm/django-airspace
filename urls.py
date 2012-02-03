@@ -8,9 +8,9 @@ from airspace.models import AirSpaces
 from tastypie.api import Api
 from airspace.api import AirSpacesResource, AirSpacesIDResource
 
-v2_api = Api(api_name='v2')
-v2_api.register(AirSpacesResource())
-v2_api.register(AirSpacesIDResource())
+v1_api = Api(api_name='v1')
+v1_api.register(AirSpacesResource())
+v1_api.register(AirSpacesIDResource())
 
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
@@ -46,9 +46,6 @@ urlpatterns = patterns('',
     # Uncomment the next line to enable the admin:
     url(r'^admin/', include(admin.site.urls)),
 
-    ## For django-piston
-    (r'^api/', include('api.urls')),
-
     ## For django-tastypie
-    (r'^api2/', include(v2_api.urls)),
+    (r'^api/', include(v1_api.urls)),
 )
