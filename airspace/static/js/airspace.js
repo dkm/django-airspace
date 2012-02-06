@@ -562,9 +562,9 @@ function getAndDisplay(vectors, space_list){
     var already_displayed = {};
     var to_get = {};
     var to_get_s = undefined;
-
+    
     $.each(space_list, function(idx) {
-	var pk = space_list[idx];
+	var pk = space_list[idx].id;
 	to_display[pk] = true;
 	if (displayed[pk]){
 	    already_displayed[pk] = true;
@@ -573,7 +573,7 @@ function getAndDisplay(vectors, space_list){
 	    if (to_get_s == undefined)
 		to_get_s = pk;
 	    else
-		to_get_s = to_get_s + "," + pk;
+		to_get_s = to_get_s + ";" + pk;
 	}
     });
 
@@ -586,15 +586,12 @@ function getAndDisplay(vectors, space_list){
     cleanDisplayed(vectors, to_display);
 
     if (to_get_s != undefined ){
-	$.post('/airspace/json/', 
-	       {
-		   'ZID': to_get_s,
-		   'csrfmiddlewaretoken' : global_csrf_token,
-	       },
-	       function(data) {
-	           displayAirspaces(vectors, data);
-		   $('#spinner-ajax-load').hide();
-	       });
+        $.getJSON('/api/v1/airspaces/set/' + to_get_s + '?format=json',
+	          function(data) {
+	              displayAirspaces(vectors, data);
+		      $('#spinner-ajax-load').hide();
+	          }
+                 );
     } else {
 	$('#spinner-ajax-load').hide();
     }

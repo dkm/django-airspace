@@ -49,11 +49,11 @@ def _internal_get_bbox_AS(request, **kwargs):
     highlon = float(m.group('highlon'))
     highlat = float(m.group('highlat'))
         
-    zone_bbox = Polygon(((lowlon, lowlat),
-                         (highlon, lowlat),
-                         (highlon, highlat),
-                         (lowlon, highlat),
-                         (lowlon, lowlat)))
+    zone_bbox = Polygon(((float(lowlat),float(lowlon)),
+                         (float(lowlat), float(highlon)),
+                         (float(highlat), float(highlon)),
+                         (float(highlat), float(lowlon)),
+                         (float(lowlat), float(lowlon))))
 
     spaces = AirSpaces.objects.filter(geom__intersects=zone_bbox)
         
