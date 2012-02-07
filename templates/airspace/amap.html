@@ -41,11 +41,7 @@
 	  <input type="submit" name="name-query" value="Find Airspace"/>
 	</form>
 
-        <form id="debug2">
-	  <input type="submit" name="debug" value="Update Visible Airspace"/>
-	</form>
-
-        <form id="update-visible-apiv1">
+	<form id="update-visible-apiv1">
 	  <input type="submit" name="update-visible-apiv1" value="Update Visible Airspace (api)"/>
 	</form>
 
@@ -186,16 +182,6 @@
             return false;
         });
 
-        $('#debug2').submit( function () {
-	    $('#spinner-ajax-load').show();
-            bounds = map.getExtent().transform(map.projection, map.displayProjection);
-            $.getJSON('/airspace/json/bbox/id/' + bounds.toBBOX(), 
-                      function(data) {
-	                   getAndDisplay(vectors, data);
-                      });
-            return false;
-        });
-
         $('#update-visible-apiv1').submit( function () {
 	    $('#spinner-ajax-load').show();
             bounds = map.getExtent().transform(map.projection, map.displayProjection);
@@ -230,7 +216,7 @@
         var pnt_control_done = function (point) {
              point.transform(map.projection, map.displayProjection);
              $('#spinner-ajax-load').show();
-             $.getJSON('/airspace/json/point/id/' + point.x + ',' + point.y +',' + $('#radius-search').val(), 
+             $.getJSON('/api/v1/airspacesID/point/?limit=0&format=json&q=' + point.x + ',' + point.y +'&r=' + $('#radius-search').val(), 
                        function(data) {
 	                   getAndDisplay(vectors, data);
                         });

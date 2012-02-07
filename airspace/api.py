@@ -172,7 +172,7 @@ class AbstractAirSpacesResource(ModelResource):
         else:
             radius = int(mr.group('radius'))
 
-        point = Point(float(mq.group('lon')), float(mq.group('lat')))
+        point = Point(float(mq.group('lat')), float(mq.group('lon')))
         
         spaces = AirSpaces.objects.filter(geom__distance_lte=(point, D(m=radius)))
 
