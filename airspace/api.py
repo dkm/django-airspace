@@ -128,7 +128,6 @@ class GeometryField(ApiField):
 class AbstractAirSpacesResource(ModelResource):
     def override_urls(self):
         return [
-            # url(r"^(?P<resource_name>%s)/bbox/ids%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_bbox_ids'), name="api_get_bbox_ids"),
             url(r"^(?P<resource_name>%s)/bbox%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_bbox'), name="api_get_bbox"),
             url(r"^(?P<resource_name>%s)/point%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_point'), name="api_get_point"),
             ]
@@ -138,15 +137,9 @@ class AbstractAirSpacesResource(ModelResource):
         self.is_authenticated(request)
         self.throttle_check(request)
 
-        # onlyids = request.GET.get('onlyids', False)
-        
         spaces = _internal_get_bbox_AS(request, **kwargs)
 
         objects = []
-        # if onlyids :
-        #     for result in spaces:
-        #         objects.append(result.pk)
-        # else:
         for result in spaces:
             bundle = self.build_bundle(obj=result, request=request)
             bundle = self.full_dehydrate(bundle)
@@ -162,7 +155,6 @@ class AbstractAirSpacesResource(ModelResource):
 
         q = request.GET.get('q', '').strip()
         r = request.GET.get('r', '').strip()
-        # onlyids = request.GET.get('onlyids', False)
 
         mq = re.match('(?P<lat>-?[\d\.]+),(?P<lon>-?[\d\.]+)', q)
         mr = re.match('(?P<radius>\d+)', r)
@@ -177,12 +169,6 @@ class AbstractAirSpacesResource(ModelResource):
         spaces = AirSpaces.objects.filter(geom__distance_lte=(point, D(m=radius)))
 
         objects = []
-
-        objects = []
-        # if onlyids :
-        #     for result in spaces:
-        #         objects.append(result.pk)
-        # else:
         for result in spaces:
             bundle = self.build_bundle(obj=result, request=request)
             bundle = self.full_dehydrate(bundle)
@@ -190,7 +176,6 @@ class AbstractAirSpacesResource(ModelResource):
             
         self.log_throttled_access(request)
         return self.create_response(request, objects)
-    
 
 class AirSpacesResource(AbstractAirSpacesResource):
     geometry = GeometryField(attribute="geom")
@@ -226,3 +211,25 @@ class AirSpacesIDResource(AbstractAirSpacesResource):
                     'ceil_alti', 'ceil_alti_m', 'ceil_fl', 'ceil_ref', 'ceil_f_sfc', 'ceil_unl',
                     'flr_alti', 'flr_alti_m', 'flr_fl', 'flr_ref', 'flr_f_sfc', 'flr_unl' ]
         
+
+##
+## Intersection handling
+##
+
+class Intersection:
+    airspace_id = None # airspace being intersected
+    intersection_seg = None # linestring intersection
+    data_top = [] # floor for airspace along intersection
+    data_bottom = [] # ceiling for airspace along intersection
+    minh = 0 # minimum height of airspace along intersection
+    maxh = 0 # maximim height of airspace along intersection
+    indexes = [] # indexes for linestring intersection
+    
+
+class IntersectionBundle:
+    airspaces_id = [] # list of IDs of airspace intersected. Could be omitted.
+    intersections = [] # contains Intersection objects
+    indexes = [] # could be removed ?
+    interpolated = [] # interpolated version of path sent by user
+    relief_profile = [] # relief along path, using interpolated version.
+    

@@ -11,50 +11,59 @@
     </script>
 
 
-    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}lib/OpenLayers.js"></script> 
-    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/airspace.js"></script> 
+    <script type="text/javascript" src="{{ STATIC_URL }}lib/OpenLayers.js"></script> 
+    <script type="text/javascript" src="{{ STATIC_URL }}js/airspace.js"></script> 
 
-    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery-1.7.1.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery-1.7.1.min.js"></script>
 
-    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/flot/jquery.flot.js"></script>
-    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/flot/jquery.flot.crosshair.js"></script>
-    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/flot/jquery.flot.navigate.js"></script> 
-    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/flot/jquery.flot.selection.js"></script> 
-    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/flot/jquery.flot.fillbetween.js"></script> 
+    <script type="text/javascript" src="{{ STATIC_URL }}js/flot/jquery.flot.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/flot/jquery.flot.crosshair.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/flot/jquery.flot.navigate.js"></script> 
+    <script type="text/javascript" src="{{ STATIC_URL }}js/flot/jquery.flot.selection.js"></script> 
+    <script type="text/javascript" src="{{ STATIC_URL }}js/flot/jquery.flot.fillbetween.js"></script> 
 
-    <script src="{{ STATIC_URL }}js/file-upload/fileuploader.js"></script> 
-    <script src="{{ STATIC_URL }}js/date.js"></script> 
+    <script type="text/javascript" src="{{ STATIC_URL }}js/file-upload/fileuploader.js"></script> 
+    <script type="text/javascript" src="{{ STATIC_URL }}js/date.js"></script> 
  
-    <link rel="stylesheet" href="{{ STATIC_URL }}style2.css" type="text/css"> 
-   <link rel="stylesheet" href="{{ STATIC_URL }}style-amap.css" type="text/css"> 
-    <link rel="stylesheet" href="{{STATIC_URL }}style.css" type="text/css"> 
-    <link rel="stylesheet" href="{{STATIC_URL }}js/file-upload/fileuploader.css" type="text/css">
+    <link rel="stylesheet" href="{{ STATIC_URL }}style2.css" type="text/css" /> 
+    <link rel="stylesheet" href="{{ STATIC_URL }}style-amap.css" type="text/css" /> 
+    <link rel="stylesheet" href="{{STATIC_URL }}style.css" type="text/css" /> 
+    <link rel="stylesheet" href="{{STATIC_URL }}js/file-upload/fileuploader.css"
+	  type="text/css" />
 
-    <!-- Not 100% convinced that this is a correct way to handle
-      -- CSRF with Ajax...
-      -- http://stackoverflow.com/questions/5407463/how-to-use-post-with-django 
-      -- seems to go this way... But still... Not 100% sure :)
-      -->
+     <!-- Not 100% convinced that this is a correct way to handle -->
+     <!-- CSRF with Ajax... -->
+     <!-- http://stackoverflow.com/questions/5407463/how-to-use-post-with-django  -->
+     <!-- seems to go this way... But still... Not 100% sure :) -->
+     
 
 </head> 
   <body> 
         <!-- <form id="debug"><input type="submit" name"debug"/> </form> -->
 
-	<form id="name-query">
-	  <input type="text" id="name-query-id" name="name-query-search" />
-	  <input type="submit" name="name-query" value="Find Airspace"/>
+	<form id="name-query" action="#">
+	  <p>
+	    <input type="text" id="name-query-id" name="name-query-search" />
+	    <input type="submit" name="name-query" value="Find Airspace"/>
+	  </p>
 	</form>
 
-	<form id="update-visible-apiv1">
-	  <input type="submit" name="update-visible-apiv1" value="Update Visible Airspace (api)"/>
+	<form id="update-visible-apiv1" action="#">
+	  <p>
+	    <input type="submit" name="update-visible-apiv1" value="Update Visible Airspace (api)"/>
+	  </p>
 	</form>
 
         <div id="map" class="smallmap"></div>
 	<div id="spinner-ajax-load"></div>
-	<form>
+
+	<form action="#">
+	  <p>
 	 Search radius in m for point selection : <input type="text" id="radius-search" name="radius-search" value="5000" />
         <br />
-         Limit height to (filter out airspace above) : <input type="text" id="height-limit" name="height-limit" value="0" />m (0 : unlimited)
+         Limit height to (filter out airspace above) : <input type="text"
+							      id="height-limit" name="height-limit" value="0" />m (0 : unlimited)
+	</p>
 	</form>
 
 	<div id="file-uploader">       
@@ -84,19 +93,17 @@
             </li> 
         </ul>
 
-
-
 	<div id="highlighted"></div> 
 	<div id="info"></div> 
 
         <div id="charts">
 	  <div id="chart-placeholder"></div> 
 	  <div id="chart-vertical"></div>
-	</div> <br />
+	</div>
 
 	<script defer="defer" type="text/javascript"> 
 	$('#spinner-ajax-load').hide();
-	$('#spinner-ajax-load').html('<img src="{{ STATIC_URL }}img/ajax-loader.gif"/> Loading data from remote server...');
+	$('#spinner-ajax-load').html('<img src="{{ STATIC_URL}}img/ajax-loader.gif" alt="loading"/> Loading data from remote server...');
         var map = new OpenLayers.Map('map', {
 	                projection: new OpenLayers.Projection("EPSG:900913"),
                         displayProjection: new OpenLayers.Projection("EPSG:4326"),
@@ -191,7 +198,7 @@
             bounds = map.getExtent().transform(map.projection, map.displayProjection);
             $.getJSON('/api/v1/airspacesID/bbox/?q=' + bounds.toBBOX() + '&format=json&limit=0', 
                       function(data) {
-	                   getAndDisplay(vectors, data);
+	                   getAndDisplay(vectors, data.map(function(x){return x.id;}));
                       });
             return false;
         });
@@ -222,10 +229,9 @@
              $('#spinner-ajax-load').show();
              $.getJSON('/api/v1/airspacesID/point/?limit=0&format=json&q=' + point.x + ',' + point.y +'&r=' + $('#radius-search').val(), 
                        function(data) {
-	                   getAndDisplay(vectors, data);
+	                   getAndDisplay(vectors, data.map(function(x){return x.id;}));
                         });
                     };
-
 
         var drawControls = {
                     point: new OpenLayers.Control.DrawFeature(path_vectors,

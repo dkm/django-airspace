@@ -564,7 +564,7 @@ function getAndDisplay(vectors, space_list){
     var to_get_s = undefined;
     
     $.each(space_list, function(idx) {
-	var pk = space_list[idx].id;
+	var pk = space_list[idx];
 	to_display[pk] = true;
 	if (displayed[pk]){
 	    already_displayed[pk] = true;
