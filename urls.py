@@ -26,20 +26,10 @@ urlpatterns = patterns('',
 
     url(r'^airspace/json/trackup$', 'airspace.views.json_track_upload'),
 
-    url(r'^airspace/json/(?P<zone_id>\d+)$', 'airspace.views.json_zone'),
-    url(r'^airspace/json/$', 'airspace.views.json_zone_post'),
     url(r'^airspace/json/name/(?P<name>.*)$', 'airspace.views.json_zones_by_name'),
 
     url(r'^airspace/json/path/id/$', 'airspace.views.json_path_id_post'),
                        
-    url(r'^airspace/json/(?P<zone_ids>[\d,]+)$', 'airspace.views.json_zones'),
-
-    url(r'^airspace/json/bbox/(?P<lowlat>-?[\d\.]+),(?P<lowlon>-?[\d\.]+),(?P<highlat>-?[\d\.]+),(?P<highlon>-?[\d\.]+)$', 'airspace.views.json_zone_bbox'),
-
-    url(r'^airspace/json/point/id/(?P<lat>-?[\d\.]+),(?P<lon>-?[\d\.]+),(?P<radius>\d+)$', 'airspace.views.jsonID_zone_point'),
-
-    url(r'^airspace/json/bbox/id/(?P<lowlat>-?[\d\.]+),(?P<lowlon>-?[\d\.]+),(?P<highlat>-?[\d\.]+),(?P<highlon>-?[\d\.]+)$', 'airspace.views.jsonID_zone_bbox'),
-
     # Uncomment the admin/doc line below to enable admin documentation:
     # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
     url(r'^airspace/amap/', 'airspace.views.amap'),
