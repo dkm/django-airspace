@@ -6,11 +6,12 @@ from django.views.generic import ListView
 from airspace.models import AirSpaces
 
 from tastypie.api import Api
-from airspace.api import AirSpacesResource, AirSpacesIDResource
+from airspace.api import AirSpacesResource, AirSpacesIDResource, IntersectionsResource
 
 v1_api = Api(api_name='v1')
 v1_api.register(AirSpacesResource())
 v1_api.register(AirSpacesIDResource())
+v1_api.register(IntersectionsResource())
 
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin

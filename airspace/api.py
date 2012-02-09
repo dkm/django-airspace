@@ -21,13 +21,18 @@
 from models import AirSpaces
 
 from tastypie.resources import Resource, ModelResource
-from tastypie.fields import ApiField, DictField, CharField, IntegerField
+from tastypie.fields import ApiField, DictField, CharField, IntegerField, ListField
 from tastypie.utils import trailing_slash
+
+# for custom Resource
+from tastypie.authentication import Authentication
+from tastypie.authorization import Authorization
+
 
 from django.conf.urls.defaults import *
 from django.http import Http404
 from django.contrib.gis.measure import Distance, D
-from django.contrib.gis.geos import Polygon, Point
+from django.contrib.gis.geos import Polygon, Point, LineString
 
 import re
 
@@ -35,6 +40,8 @@ import re
 from django.utils import simplejson
 import geojson
 from tastypie.serializers import Serializer
+
+from airspace.helpers import interpolate_linestring, get_relief_profile_along_track, get_zone_profile_along_path
 
 
 def _internal_get_bbox_AS(request, **kwargs):
@@ -188,6 +195,7 @@ class AirSpacesResource(AbstractAirSpacesResource):
         queryset = AirSpaces.objects.all()
         resource_name = 'airspaces'
         serializer = GeoJSONSerializer()
+        allowed_methods = ['get']
 
         # these are wrapped by the 'properties' attribute above.
         excludes = ['name', 'start_date', 'stop_date',
@@ -202,6 +210,7 @@ class AirSpacesIDResource(AbstractAirSpacesResource):
     class Meta:
         queryset = AirSpaces.objects.all()
         resource_name = 'airspacesID'
+        allowed_methods = ['get']
 
         # these are wrapped by the 'properties' attribute above.
         excludes = ['start_date', 'stop_date',
@@ -216,6 +225,38 @@ class AirSpacesIDResource(AbstractAirSpacesResource):
 ## Intersection handling
 ##
 
+def get_space_intersect_path(path, height_limit=None):
+    spaces = AirSpaces.objects.filter(geom__intersects=path)
+
+    bundle = IntersectionBundle()
+
+    for iz in spaces:
+        intersect = path.intersection(iz.geom)
+       
+        if intersect.geom_typeid == 1: ## LineString
+            intersects = [intersect]
+        elif intersect.geom_typeid == 5: ## MultiLineString
+            intersects =  merge_touching_linestring(intersect)
+
+        for ls in intersects:
+            nls = ls
+            floor, ceiling, minh, maxh = get_zone_profile_along_path(iz, nls)
+            if not height_limit or minh < height_limit:
+                bundle.airspaces_id.add(iz.pk)
+                
+                i = Intersection()
+                i.airspace_id = iz.pk
+                i.intersection_seg = nls
+                i.data_top = ceiling
+                i.data_bottom = floor
+                i.minh = minh
+                i.maxh = maxh
+                i.indexes =  [path.project(Point(x)) for x in nls]
+                
+                bundle.intersections.append(i)
+        
+    return bundle
+
 class Intersection:
     airspace_id = None # airspace being intersected
     intersection_seg = None # linestring intersection
@@ -224,12 +265,74 @@ class Intersection:
     minh = 0 # minimum height of airspace along intersection
     maxh = 0 # maximim height of airspace along intersection
     indexes = [] # indexes for linestring intersection
-    
 
+
+    def as_dict(self):
+        r = {
+            'airspace_id' : self.airspace_id,
+            'intersection_seg' : self.intersection_seg,
+            'data_top' : self.data_top,
+            'data_bottom' : self.data_bottom,
+            'minh' : self.minh,
+            'maxh' : self.maxh,
+            'indexes' : self.indexes,
+            }
+        return r
+        
 class IntersectionBundle:
-    airspaces_id = [] # list of IDs of airspace intersected. Could be omitted.
+    airspaces_id = set() # list of IDs of airspace intersected. Could be omitted.
     intersections = [] # contains Intersection objects
     indexes = [] # could be removed ?
     interpolated = [] # interpolated version of path sent by user
     relief_profile = [] # relief along path, using interpolated version.
     
+
+class IntersectionsResource(Resource):
+    airspaces_id = ListField(attribute='airspaces_id') # list of IDs of airspace intersected. Could be omitted.
+    intersections = ListField(attribute='intersections') # contains Intersection objects
+    indexes = ListField(attribute='indexes') # could be removed ?
+    interpolated = ListField(attribute='interpolated') # interpolated version of path sent by user
+    relief_profile = ListField(attribute='relief_profile') # relief along path, using interpolated version.
+
+    class Meta:
+        resource_name = 'intersections'
+        object_class = IntersectionBundle
+        authentication = Authentication()
+        authorization = Authorization()
+        allowed_methods = ['get']
+
+        include_resource_uri = False
+
+    def base_urls(self):
+        return [ url(r"^(?P<resource_name>%s)/path%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_path'), name="api_get_path"), ]
+
+    def get_path(self, request, **kwargs):
+        self.method_check(request, allowed=['get'])
+        self.is_authenticated(request)
+        self.throttle_check(request)
+
+        q = request.GET.get('q', '').strip().split(' ')
+        coords = []
+        for p in q:
+            mq = re.match('(?P<lat>-?[\d\.]+),(?P<lon>-?[\d\.]+)', p)
+            coords.append([float(mq.group('lat')), float(mq.group('lon'))])
+
+        h = request.GET.get('h', None)
+        
+        path = LineString(coords)
+        indexes, interpolated = interpolate_linestring(path)
+        relief_profile = get_relief_profile_along_track(interpolated)
+        
+        ib = get_space_intersect_path(LineString(interpolated), h)
+        ib.indexes = indexes
+        ib.interpolated = interpolated
+        ib.relief_profile = relief_profile
+        
+        bundle = self.build_bundle(obj=ib, request=request)
+        bundle = self.full_dehydrate(bundle)
+
+        self.log_throttled_access(request)
+        return self.create_response(request, [bundle])
+
+    def dehydrate_intersections(self, bundle):
+        return [x.as_dict() for x in bundle.obj.intersections]

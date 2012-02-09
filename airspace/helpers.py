@@ -264,3 +264,26 @@ def get_space_intersect_path(path, height_limit=None):
                         })
         
     return (data.keys(), inters)
+
+def interpolate_linestring(path):
+    interpolated_path = []
+    prev_p = Point(path[0])
+    interpolated_path.append(path[0])
+
+    sampling_step = 0.002
+    ## sampling = 0.002 (~100m)
+    for p in path[1:]:
+        n_p = Point(p)
+        d = prev_p.distance(n_p)
+        if d > sampling_step:
+            start_idx = path.project(prev_p)
+            nsamples = int(d/sampling_step)
+            for i in xrange(nsamples):
+                idx = start_idx + sampling_step + i*sampling_step
+                interpolated_path.append(list(path.interpolate(idx)))
+        prev_p = n_p                      
+        interpolated_path.append(p)
+
+    indexes = [path.project(Point(x)) for x in interpolated_path]
+
+    return indexes, interpolated_path
