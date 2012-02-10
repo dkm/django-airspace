@@ -41,7 +41,7 @@ from django.utils import simplejson
 import geojson
 from tastypie.serializers import Serializer
 
-from airspace.helpers import interpolate_linestring, get_relief_profile_along_track, get_zone_profile_along_path
+from airspace.helpers import interpolate_linestring, get_relief_profile_along_track, get_zone_profile_along_path, merge_touching_linestring
 
 
 def _internal_get_bbox_AS(request, **kwargs):
@@ -311,10 +311,11 @@ class IntersectionsResource(Resource):
         self.is_authenticated(request)
         self.throttle_check(request)
 
-        q = request.GET.get('q', '').strip().split(' ')
+        q = request.GET.get('q', '').strip().split(',')
+        print q
         coords = []
         for p in q:
-            mq = re.match('(?P<lat>-?[\d\.]+),(?P<lon>-?[\d\.]+)', p)
+            mq = re.match('(?P<lat>-?[\d\.]+) (?P<lon>-?[\d\.]+)', p)
             coords.append([float(mq.group('lat')), float(mq.group('lon'))])
 
         h = request.GET.get('h', None)
@@ -332,7 +333,7 @@ class IntersectionsResource(Resource):
         bundle = self.full_dehydrate(bundle)
 
         self.log_throttled_access(request)
-        return self.create_response(request, [bundle])
+        return self.create_response(request, bundle)
 
     def dehydrate_intersections(self, bundle):
         return [x.as_dict() for x in bundle.obj.intersections]
