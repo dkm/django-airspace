@@ -232,7 +232,7 @@ def get_space_intersect_path(path, height_limit=None):
 
     for iz in spaces:
         intersect = path.intersection(iz.geom)
-       
+        
         if intersect.geom_typeid == 1: ## LineString
             intersects = [intersect]
         elif intersect.geom_typeid == 5: ## MultiLineString
@@ -244,33 +244,35 @@ def get_space_intersect_path(path, height_limit=None):
             if not height_limit or minh < height_limit:
                 bundle.airspaces_id.add(iz.pk)
                 
-                i = Intersection()
-                i.airspace_id = iz.pk
-                i.intersection_seg = nls
-                i.data_top = ceiling
-                i.data_bottom = floor
-                i.minh = minh
-                i.maxh = maxh
-                i.indexes =  [path.project(Point(x)) for x in nls]
+                i = Intersection(iz.pk, nls, ceiling, floor, minh, maxh, [path.project(Point(x)) for x in nls])
+                # i.airspace_id = iz.pk
+                # i.intersection_seg = nls
+                # i.data_top = ceiling
+                # i.data_bottom = floor
+                # i.minh = minh
+                # i.maxh = maxh
+                # i.indexes =  [path.project(Point(x)) for x in nls]
                 
                 bundle.intersections.append(i)
         
     return bundle
 
 class Intersection:
-    airspace_id = None # airspace being intersected
-    intersection_seg = None # linestring intersection
-    data_top = [] # floor for airspace along intersection
-    data_bottom = [] # ceiling for airspace along intersection
-    minh = 0 # minimum height of airspace along intersection
-    maxh = 0 # maximim height of airspace along intersection
-    indexes = [] # indexes for linestring intersection
+
+    def __init__(self, airspace_id, intersection_seg, data_top, data_bottom, minh, maxh, indexes):
+        self.airspace_id = airspace_id # airspace being intersected
+        self.intersection_seg = intersection_seg # linestring intersection
+        self.data_top = data_top # floor for airspace along intersection
+        self.data_bottom = data_bottom # ceiling for airspace along intersection
+        self.minh = minh # minimum height of airspace along intersection
+        self.maxh = maxh # maximim height of airspace along intersection
+        self.indexes = indexes # indexes for linestring intersection
 
 
     def as_dict(self):
         r = {
             'airspace_id' : self.airspace_id,
-            'intersection_seg' : self.intersection_seg,
+            'intersection_seg' : simplejson.loads(self.intersection_seg.geojson),
             'data_top' : self.data_top,
             'data_bottom' : self.data_bottom,
             'minh' : self.minh,
@@ -280,11 +282,13 @@ class Intersection:
         return r
         
 class IntersectionBundle:
-    airspaces_id = set() # list of IDs of airspace intersected. Could be omitted.
-    intersections = [] # contains Intersection objects
-    indexes = [] # could be removed ?
-    interpolated = [] # interpolated version of path sent by user
-    relief_profile = [] # relief along path, using interpolated version.
+
+    def __init__(self):
+        self.airspaces_id = set() # list of IDs of airspace intersected. Could be omitted.
+        self.intersections = [] # contains Intersection objects
+        self.indexes = None # could be removed ?
+        self.interpolated = None # interpolated version of path sent by user
+        self.relief_profile = None # relief along path, using interpolated version.
     
 
 class IntersectionsResource(Resource):
@@ -312,7 +316,6 @@ class IntersectionsResource(Resource):
         self.throttle_check(request)
 
         q = request.GET.get('q', '').strip().split(',')
-        print q
         coords = []
         for p in q:
             mq = re.match('(?P<lat>-?[\d\.]+) (?P<lon>-?[\d\.]+)', p)

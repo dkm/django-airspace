@@ -177,8 +177,8 @@ function trackDisplay(response, linestring_track) {
 
 	track_layer.addFeatures([marker_feature, track]);
 	var ls_ol_points = [];
-	for (var i=0; i < response.interpolated.coordinates.length; i++){
-	    ls_ol_points.push(new OpenLayers.Geometry.Point(response.interpolated.coordinates[i][0], response.interpolated.coordinates[i][1]));
+	for (var i=0; i < response.interpolated.length; i++){
+	    ls_ol_points.push(new OpenLayers.Geometry.Point(response.interpolated[i][0], response.interpolated[i][1]));
 	}
 
 	var ls_interpolated = new OpenLayers.Geometry.LineString(ls_ol_points);
@@ -322,7 +322,6 @@ function handleReliefChart(track_points, relief_profile, intersections, indexes,
 
     var x_max = indexes[indexes.length-1];
 
-
     if (from_gps_track) {
 	plot_data.push({
             data : track_points_resynced,
@@ -362,7 +361,7 @@ function handleReliefChart(track_points, relief_profile, intersections, indexes,
 	plot_data.push(ptop);
 	plot_data.push(pbottom);
 
-	displayIntersection(intersections[i].inter);
+	displayIntersection(intersections[i].intersection_seg);
     }
 
     var plot_options = {
