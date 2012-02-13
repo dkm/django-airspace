@@ -18,32 +18,20 @@
 #   License along with this program.  If not, see
 #   <http://www.gnu.org/licenses/>.
 
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponseBadRequest
 from airspace.models import AirSpaces
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 
-## for computing zone in a given radius from a point
-from django.contrib.gis.geos import Point, GEOSGeometry, LineString, Polygon, MultiLineString
-from django.contrib.gis.measure import Distance, D
-
-from django.core import serializers
 from django.views.decorators.csrf import csrf_exempt
-
-import geojson
-import json
 
 from django.middleware import csrf
 
 from django.http import Http404
 
-from django import forms
-
 import os.path
 import re
 import osgeo.ogr
-
-from django.contrib.gis.geos import GEOSGeometry
 
 from airspace.helpers import loadFromGpx, get_space_intersect_path, save_upload, get_relief_profile_along_track, get_ceiling_floor_at_point, get_zone_profile_along_path, merge_touching_linestring, get_space_intersect_path
 
