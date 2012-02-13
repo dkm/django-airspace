@@ -27,10 +27,6 @@ urlpatterns = patterns('',
 
     url(r'^airspace/json/trackup$', 'airspace.views.json_track_upload'),
 
-    url(r'^airspace/json/name/(?P<name>.*)$', 'airspace.views.json_zones_by_name'),
-
-    url(r'^airspace/json/path/id/$', 'airspace.views.json_path_id_post'),
-                       
     # Uncomment the admin/doc line below to enable admin documentation:
     # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
     url(r'^airspace/amap/', 'airspace.views.amap'),
