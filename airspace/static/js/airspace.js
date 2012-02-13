@@ -246,7 +246,7 @@ function relief_chart_hover() {
                 }
 	    }
 
-	} else if (i < serie.data.lenght) {
+	} else if (i < serie.data.length) {
             var d_prev = Math.abs(pos_x - serie.data[i][0]);
 
 	    for (i++; i < serie.data.length; i++) {
@@ -262,6 +262,10 @@ function relief_chart_hover() {
                 }
 	    }
 	}
+
+	// handle off-by-one after reaching start/end of serie
+	if (i<0) i = 0;
+	if (i>=serie.data.length) i = serie.data.length-1;
 
 	chart_timeout_args.plot.unhighlight();
 	chart_timeout_args.plot.highlight(0,i);
@@ -333,8 +337,8 @@ function handleReliefChart(track_points, relief_profile, intersections, indexes,
 	lines: { show: true }
     });
 
-
     updateInterCount(intersections);
+
     for (var i=0; i < intersections.length; i++){
 	mergeIndexInIntersection(intersections[i]);
 	var ptop = {
@@ -367,7 +371,6 @@ function handleReliefChart(track_points, relief_profile, intersections, indexes,
 //	selection: { mode: "x" },
 	zoom: { 
 	    interactive: true,
-	    
 	},
 	pan: {
 	    interactive: true,
