@@ -1,5 +1,10 @@
 django-airspace is my first django application. It is also my first real GIS application => there may be some newbie errors :)
 
+A demo is available at http://airspace.kataplop.net/airspace/amap
+The API is available under http://airspace.kataplop.net/api/v1/
+
+This is still an early stage demo...
+
 It is intended to handle airspaces, in particular for paraglider/hangglider pilots, but it may be useful for others kinds of pilots.
 
 The short goal is to be able to display/search airspaces from a webpage. It should also be possible to upload a flight track and
