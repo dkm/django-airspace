@@ -184,11 +184,9 @@
 	});
  
         $('#name-query').submit( function () {
-	
-            $.getJSON('/airspace/json/name/' + $('#name-query-id').val(), 
+            $.getJSON('/api/v1/airspacesID/name/?format=json&q=' + $('#name-query-id').val(), 
                       function(data) {
-	                   getAndDisplay(vectors, data);
-
+	                   getAndDisplay(vectors, data.map(function(x){return x.id;}));
                       });
             return false;
         });
@@ -212,7 +210,8 @@
 	    var tmp_str = path.toString();
 	    var path_str = tmp_str.substring(11, tmp_str.length-2);
             
-	    $.getJSON('/api/v1/intersections/path/?format=json&q=' + path_str,
+	    $.getJSON('/api/v1/intersections/path/?format=json&q=' + path_str +
+                                                             '&h=' + $('#height-limit').val(),
 	              function(data) {
                           // display crossed zones
                           getAndDisplay(vectors, data.airspaces_id);

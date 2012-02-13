@@ -137,6 +137,7 @@ class AbstractAirSpacesResource(ModelResource):
         return [
             url(r"^(?P<resource_name>%s)/bbox%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_bbox'), name="api_get_bbox"),
             url(r"^(?P<resource_name>%s)/point%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_point'), name="api_get_point"),
+            url(r"^(?P<resource_name>%s)/name%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_name'), name="api_get_name"),
             ]
 
     def get_bbox(self, request, **kwargs):
@@ -174,6 +175,23 @@ class AbstractAirSpacesResource(ModelResource):
         point = Point(float(mq.group('lat')), float(mq.group('lon')))
         
         spaces = AirSpaces.objects.filter(geom__distance_lte=(point, D(m=radius)))
+
+        objects = []
+        for result in spaces:
+            bundle = self.build_bundle(obj=result, request=request)
+            bundle = self.full_dehydrate(bundle)
+            objects.append(bundle)
+            
+        self.log_throttled_access(request)
+        return self.create_response(request, objects)
+
+    def get_name(self, request, **kwargs):
+        self.method_check(request, allowed=['get'])
+        self.is_authenticated(request)
+        self.throttle_check(request)
+
+        q = request.GET.get('q', '').strip()
+        spaces = AirSpaces.objects.filter(name__icontains=q)
 
         objects = []
         for result in spaces:
@@ -227,7 +245,6 @@ class AirSpacesIDResource(AbstractAirSpacesResource):
 
 def get_space_intersect_path(path, height_limit=None):
     spaces = AirSpaces.objects.filter(geom__intersects=path)
-
     bundle = IntersectionBundle()
 
     for iz in spaces:
@@ -245,13 +262,6 @@ def get_space_intersect_path(path, height_limit=None):
                 bundle.airspaces_id.add(iz.pk)
                 
                 i = Intersection(iz.pk, nls, ceiling, floor, minh, maxh, [path.project(Point(x)) for x in nls])
-                # i.airspace_id = iz.pk
-                # i.intersection_seg = nls
-                # i.data_top = ceiling
-                # i.data_bottom = floor
-                # i.minh = minh
-                # i.maxh = maxh
-                # i.indexes =  [path.project(Point(x)) for x in nls]
                 
                 bundle.intersections.append(i)
         
@@ -322,6 +332,10 @@ class IntersectionsResource(Resource):
             coords.append([float(mq.group('lat')), float(mq.group('lon'))])
 
         h = request.GET.get('h', None)
+        try:
+            h = float(h)
+        except:
+            h = None
         
         path = LineString(coords)
         indexes, interpolated = interpolate_linestring(path)
