@@ -28,12 +28,15 @@ from tastypie.utils import trailing_slash
 from tastypie.authentication import Authentication
 from tastypie.authorization import Authorization
 
+# for returning errors...
+from tastypie.exceptions import ImmediateHttpResponse
+from tastypie.http import HttpNotFound
 
 from django.conf.urls.defaults import *
-from django.http import Http404
 from django.contrib.gis.measure import Distance, D
 from django.contrib.gis.geos import Polygon, Point, LineString
 
+import os
 import re
 
 # for serialization
@@ -41,7 +44,7 @@ from django.utils import simplejson
 import geojson
 from tastypie.serializers import Serializer
 
-from airspace.helpers import interpolate_linestring, get_relief_profile_along_track, get_zone_profile_along_path, merge_touching_linestring
+from airspace.helpers import interpolate_linestring, get_relief_profile_along_track, get_zone_profile_along_path, merge_touching_linestring, loadFromGpx
 
 
 def _internal_get_bbox_AS(request, **kwargs):
@@ -49,7 +52,7 @@ def _internal_get_bbox_AS(request, **kwargs):
     m = re.match('(?P<lowlat>-?[\d\.]+),(?P<lowlon>-?[\d\.]+),(?P<highlat>-?[\d\.]+),(?P<highlon>-?[\d\.]+)', q)
 
     if not m:
-        raise Http404("Sorry, no results on that page.")
+        raise ImmediateHttpResponse(response=HttpNotFound())
 
     lowlat = float(m.group('lowlat'))
     lowlon = float(m.group('lowlon'))
@@ -256,19 +259,44 @@ def get_space_intersect_path(path, height_limit=None):
             intersects =  merge_touching_linestring(intersect)
 
         for ls in intersects:
-            nls = ls
-            floor, ceiling, minh, maxh = get_zone_profile_along_path(iz, nls)
-            if not height_limit or minh < height_limit:
-                bundle.airspaces_id.add(iz.pk)
+            floor, ceiling, minh, maxh = get_zone_profile_along_path(iz, ls)
+
+            if len(ls[0]) == 3:
+                # 0: looking for start
+                # 1: building segment
+                state = 0
+                intersect_ls = []
+
+                if not height_limit or minh < height_limit:
+                    bundle.airspaces_id.add(iz.pk)
+                    
+                for i,p in enumerate(ls):
+                    inside_zone = floor[i] < p and p < ceiling[i]
+
+                    if state == 0:
+                        if inside_zone:
+                            state = 1
+                            intersect_ls.append(p)
+                    elif state == 1:
+                        if inside_zone:
+                            intersect_ls.append(p)
+                        else:
+                            state = 0
+                            
+                            i = Intersection(iz.pk, ls, ceiling, floor, minh, maxh, [path.project(Point(x)) for x in intersect_ls])
+                            bundle.intersections.append(i)
+                            intersect_ls = []
+            else:
+                if not height_limit or minh < height_limit:
+                    bundle.airspaces_id.add(iz.pk)
                 
-                i = Intersection(iz.pk, nls, ceiling, floor, minh, maxh, [path.project(Point(x)) for x in nls])
+                    i = Intersection(iz.pk, ls, ceiling, floor, minh, maxh, [path.project(Point(x)) for x in ls])
                 
-                bundle.intersections.append(i)
+                    bundle.intersections.append(i)
         
     return bundle
 
 class Intersection:
-
     def __init__(self, airspace_id, intersection_seg, data_top, data_bottom, minh, maxh, indexes):
         self.airspace_id = airspace_id # airspace being intersected
         self.intersection_seg = intersection_seg # linestring intersection
@@ -292,7 +320,6 @@ class Intersection:
         return r
         
 class IntersectionBundle:
-
     def __init__(self):
         self.airspaces_id = set() # list of IDs of airspace intersected. Could be omitted.
         self.intersections = [] # contains Intersection objects
@@ -314,11 +341,11 @@ class IntersectionsResource(Resource):
         authentication = Authentication()
         authorization = Authorization()
         allowed_methods = ['get']
-
         include_resource_uri = False
 
     def base_urls(self):
-        return [ url(r"^(?P<resource_name>%s)/path%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_path'), name="api_get_path"), ]
+        return [ url(r"^(?P<resource_name>%s)/path%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_path'), name="api_get_path"),
+                 url(r"^(?P<resource_name>%s)/gpx/(?P<gpxid>.*)%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_gpx'), name="api_get_gpx"),]
 
     def get_path(self, request, **kwargs):
         self.method_check(request, allowed=['get'])
@@ -349,6 +376,31 @@ class IntersectionsResource(Resource):
         bundle = self.build_bundle(obj=ib, request=request)
         bundle = self.full_dehydrate(bundle)
 
+        self.log_throttled_access(request)
+        return self.create_response(request, bundle)
+
+    def get_gpx(self, request, **kwargs):
+        try:
+            filename = kwargs.get('gpxid', None)
+            dfilename = os.path.join("uploads", filename)
+        
+            track_geos = loadFromGpx(str(dfilename))
+            relief_profile = get_relief_profile_along_track(track_geos)
+        except:
+            raise ImmediateHttpResponse(response=HttpNotFound())
+        
+        ib = get_space_intersect_path(track_geos)
+
+        ib.indexes = [track_geos.project(Point(x)) for x in track_geos]
+        ib.interpolated = []
+
+        ib.relief_profile = relief_profile
+                
+        bundle = self.build_bundle(obj=ib, request=request)
+        bundle = self.full_dehydrate(bundle)
+        bundle.data['success'] = True
+        bundle.data['trackURL'] = '/static/' + filename
+        
         self.log_throttled_access(request)
         return self.create_response(request, bundle)
 

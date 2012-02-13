@@ -18,7 +18,7 @@
 #   License along with this program.  If not, see
 #   <http://www.gnu.org/licenses/>.
 
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from airspace.models import AirSpaces
 from django.shortcuts import render_to_response
 from django.template import RequestContext
@@ -93,30 +93,8 @@ def json_track_upload( request ):
     # save the file
     success = save_upload( upload, dfilename, is_raw )
 
-    ## the str() is needed to make a copy. If not, ogr Driver ctor
-    ## panics on the 'const char *' that it receives...
-    track_geos = loadFromGpx(str(dfilename))
+    return HttpResponseRedirect('/api/v1/intersections/gpx/' + filename + '/')
 
-    inter_space_ids, intersections = get_space_intersect_path(track_geos)
-
-    relief_profile = get_relief_profile_along_track(track_geos)
-
-    # let Ajax Upload know whether we saved it or not by using success: smth
-    ##
-    ## FIXME this json.loads is not very clean. Serializing and deserializing right after... :(
-    ##
-    ## use upload.name and not the filename as Django handles static files itself. We should
-    ## use some var to get the STATIC root instead of 'static/' !
-    ret_json = { 'success': success,
-                 'ZID' : inter_space_ids,
-                 'intersections' : intersections,
-                 'relief_profile': relief_profile,
-                 'indexes' : [track_geos.project(Point(x)) for x in track_geos],
-                 'trackURL': '/static/' + filename }
-    
-    r = geojson.dumps( ret_json )
-
-    return HttpResponse(r, mimetype='application/json' )
 
 ### Heavily based on code from http://kuhlit.blogspot.com/2011/04/ajax-file-uploads-and-csrf-in-django-13.html
 ### end of file-upload w/ django support

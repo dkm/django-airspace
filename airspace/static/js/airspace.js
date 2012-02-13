@@ -168,7 +168,6 @@ function trackDisplay(response, linestring_track) {
     
 	marker_feature = new OpenLayers.Feature.Vector(gpx_points[0]);
 	track_layer.addFeatures([marker_feature]);
-	//	handleChartTimed(gpx_points, response.relief_profile, response.intersections);
 	handleReliefChart(gpx_points, response.relief_profile, response.intersections, response.indexes, true);
     } else if (linestring_track) {
 	var ls_points = linestring_track.components;

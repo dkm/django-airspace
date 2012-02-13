@@ -62,7 +62,7 @@
 	 Search radius in m for point selection : <input type="text" id="radius-search" name="radius-search" value="5000" />
         <br />
          Limit height to (filter out airspace above) : <input type="text"
-							      id="height-limit" name="height-limit" value="0" />m (0 : unlimited)
+							      id="height-limit" name="height-limit" value="4000" />m (0 : unlimited)
 	</p>
 	</form>
 
@@ -260,16 +260,16 @@
             onSubmit : function( id, fileName) {
                $('#spinner-ajax-load').show();
             },
-            onComplete: function( id, fileName, responseJSON ) {
-               if (!responseJSON.success) {
+            onComplete: function( id, fileName, data ) {
+               if (!data.success) {
                    $('#spinner-ajax-load').hide();
                    return;
                }
 
                // display crossed zones
-               getAndDisplay(vectors, responseJSON.ZID);
+               getAndDisplay(vectors, data.airspaces_id);
 
-               trackDisplay(responseJSON);
+               trackDisplay(data);
             },
             params: {
                'csrf_token': global_csrf_token,
