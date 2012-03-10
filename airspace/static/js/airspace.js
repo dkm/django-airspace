@@ -154,6 +154,12 @@ function getTrackFromGpx(gpx_track_url, track_layer) {
     return new OpenLayers.Geometry.LineString(gpx_points);
 }
 
+function zoomAndPanToExtent(bounds){
+    var next_zoom = map.getZoomForExtent(bounds);
+    map.zoomTo(next_zoom);
+    map.panTo(bounds.getCenterLonLat());
+}
+
 function trackDisplay(response, linestring_track) {
     if (track_layer == undefined) {
 	initTrackLayer();
@@ -165,7 +171,8 @@ function trackDisplay(response, linestring_track) {
 
     if (response.trackURL){
 	var gpx_points = getTrackFromGpx(response.trackURL, track_layer);
-    
+	zoomAndPanToExtent(gpx_points.getBounds());
+
 	marker_feature = new OpenLayers.Feature.Vector(gpx_points[0]);
 	track_layer.addFeatures([marker_feature]);
 	handleReliefChart(gpx_points, response.relief_profile, response.intersections, response.indexes, true);
@@ -182,7 +189,7 @@ function trackDisplay(response, linestring_track) {
 
 	var ls_interpolated = new OpenLayers.Geometry.LineString(ls_ol_points);
 	ls_interpolated.transform(map.displayProjection, map.projection);
-
+	
 	handleReliefChart(ls_interpolated, response.relief_profile, response.intersections, response.indexes, false);
     }
 }
@@ -513,10 +520,20 @@ function displayZoneInfo(feature) {
     if (feature.attributes['ext_info'] != ""){
         info += '<li>Extra info: ' + feature.attributes['ext_info'] + '</li>';
     }
-    info += '<li>Floor spec: ' + zoneSpecToString(feature.attributes['floor']) + '</li>';
-    info += '<li>Ceiling spec: ' + zoneSpecToString(feature.attributes['ceiling']) + '</li>';
+    info += '<li>Floor: ' + zoneSpecToString(feature.attributes['floor']) + '</li>';
+    info += '<li>Ceiling: ' + zoneSpecToString(feature.attributes['ceiling']) + '</li>';
     info += '</li></fieldset>';
-    $('#zone-info').html(info);
+    //$('#zone-info').html(info);
+
+    var feat_lonlat_center = feature.geometry.getBounds().getCenterLonLat();
+    map.panTo(feat_lonlat_center);
+
+    map.addPopup(new OpenLayers.Popup.FramedCloud(
+        "zone-info", 
+        feat_lonlat_center,
+        null,
+        info,
+        null,true), true);
 }
 
 function clearZoneInfo(feature) {

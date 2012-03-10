@@ -10,7 +10,6 @@
       var static_root = '{{ STATIC_URL }}';
     </script>
 
-
     <script type="text/javascript" src="{{ STATIC_URL }}lib/OpenLayers.js"></script> 
     <script type="text/javascript" src="{{ STATIC_URL }}js/airspace.js"></script> 
 
@@ -31,12 +30,28 @@
     <link rel="stylesheet" href="{{STATIC_URL }}js/file-upload/fileuploader.css"
 	  type="text/css" />
 
+    <style type="text/css">
+            html, body, #map {
+                margin: 0;
+                width: 100%;
+                height: 100%;
+            }
+ 
+            #text {
+                position: absolute;
+                bottom: 1em;
+                left: 1em;
+                width: 512px;
+                z-index: 20000;
+                background-color: white;
+                padding: 0 0.5em 0.5em 0.5em;
+            }
+    </style> 
+
      <!-- Not 100% convinced that this is a correct way to handle -->
      <!-- CSRF with Ajax... -->
      <!-- http://stackoverflow.com/questions/5407463/how-to-use-post-with-django  -->
      <!-- seems to go this way... But still... Not 100% sure :) -->
-     
-
 </head> 
   <body> 
         <!-- <form id="debug"><input type="submit" name"debug"/> </form> -->
@@ -55,6 +70,7 @@
 	</form>
 
         <div id="map" class="smallmap"></div>
+
 	<div id="spinner-ajax-load"></div>
 
 	<form action="#">
@@ -108,7 +124,7 @@
 	                projection: new OpenLayers.Projection("EPSG:900913"),
                         displayProjection: new OpenLayers.Projection("EPSG:4326"),
                         panMethod: OpenLayers.Easing.Quad.easeInOut,
-                        panDuration: 100
+                        panDuration: 50
 	});
 	
         // projection here is useless as it is applied only on objects created by the library.
