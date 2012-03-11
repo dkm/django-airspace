@@ -523,17 +523,19 @@ function displayZoneInfo(feature) {
     info += '<li>Floor: ' + zoneSpecToString(feature.attributes['floor']) + '</li>';
     info += '<li>Ceiling: ' + zoneSpecToString(feature.attributes['ceiling']) + '</li>';
     info += '</li></fieldset>';
-    //$('#zone-info').html(info);
 
     var feat_lonlat_center = feature.geometry.getBounds().getCenterLonLat();
     map.panTo(feat_lonlat_center);
 
-    map.addPopup(new OpenLayers.Popup.FramedCloud(
+    var popup = new OpenLayers.Popup.FramedCloud(
         "zone-info", 
         feat_lonlat_center,
         null,
         info,
-        null,true), true);
+        null,true);
+    popup.autoSize = false;
+
+    map.addPopup(popup, true);
 }
 
 function clearZoneInfo(feature) {

@@ -73,10 +73,28 @@ h6 {
  * Map Examples Specific
  */
 .smallmap {
-    width: 900px;
-    height: 500px;
+/*    width: 1200px;*/
+/*    height: 500px; */
+
+    height: 100%;
     border: 1px solid #ccc;
 }
+
+#content {
+    left: 185px;
+    right: 0px;
+    top: 0px;
+    bottom: 0px;
+    height: 100%;
+    position: absolute;
+}
+
+#left {
+    width: 185px;
+    left: 0px;
+    position: absolute;
+}
+
 #tags {
     display: none;
 }
@@ -84,6 +102,8 @@ h6 {
 #docs p {
     margin-bottom: 0.5em;
 }
+
+
 /* mobile specific */
 @media only screen and (max-width: 600px) {
     body {
