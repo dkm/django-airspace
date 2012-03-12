@@ -1,7 +1,8 @@
 div#chart-placeholder {
-    width:800px;
+    left:0px;
+    right: 110px;
     height:150px;
-    float:left;
+    float:left; 
 }
 
 div#chart-vertical {

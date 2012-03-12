@@ -40,6 +40,10 @@
 
     <div id="content">
       <div id="map" class="smallmap"></div>
+      <div id="charts">
+	<div id="chart-placeholder"></div> 
+	<div id="chart-vertical"></div>
+      </div>
     </div>
 
     <div id="left">
@@ -76,7 +80,6 @@
 
       <div id="zone_count">Zone Count:</div>
       <div id="inter_count">Intersections Count:</div>
-      <div id="zone-info"> </div>
 
       <ul id="controlToggle"> 
         <li> 
@@ -95,15 +98,9 @@
       </ul>
 
       <div id="highlighted"></div> 
-      <div id="info"></div> 
-    </div> <!-- sidebar -->
+    </div> <!-- left -->
 
-    <div id="charts">
-      <div id="chart-placeholder"></div> 
-      <div id="chart-vertical"></div>
-    </div>
-
-	<script defer="defer" type="text/javascript"> 
+    <script defer="defer" type="text/javascript"> 
 	$('#spinner-ajax-load').hide();
 	$('#spinner-ajax-load').html('<img src="{{ STATIC_URL}}img/ajax-loader.gif" alt="loading"/> Loading data from remote server...');
         var map = new OpenLayers.Map('map', {
@@ -154,19 +151,22 @@
             });
 	map.addControl(highlightCtrl);
 
-	var selectCtrl = new OpenLayers.Control.SelectFeature(vectors,
+	// don't change this name.
+	// it is used in displayZoneInfo to get coordinates
+	// of the click as this info is not
+	// provided to the handler...
+	var globalSelectCtrl = new OpenLayers.Control.SelectFeature(vectors,
                 {clickout: true,
 	         onSelect: displayZoneInfo,
-                 onUnselect: clearZoneInfo,
 	        }
             );
-	map.addControl(selectCtrl);
+	map.addControl(globalSelectCtrl);
 
         map.addControl(new OpenLayers.Control.MousePosition());
 
         highlightCtrl.activate();
         layer_switcher.activate();
-	selectCtrl.activate();
+	globalSelectCtrl.activate();
 
 //	map.events.register("mousemove", map, function(e) { 
 //                var position = this.events.getMousePosition(e);

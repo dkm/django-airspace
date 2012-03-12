@@ -75,13 +75,14 @@ h6 {
 .smallmap {
 /*    width: 1200px;*/
 /*    height: 500px; */
-
-    height: 100%;
+    /* top : 0px; */
+    /* bottom: 150px; */
+    height: 80%;
     border: 1px solid #ccc;
 }
 
 #content {
-    left: 185px;
+    left: 195px;
     right: 0px;
     top: 0px;
     bottom: 0px;
@@ -91,7 +92,7 @@ h6 {
 
 #left {
     width: 185px;
-    left: 0px;
+    left: 10px;
     position: absolute;
 }
 

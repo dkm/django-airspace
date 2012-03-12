@@ -524,22 +524,21 @@ function displayZoneInfo(feature) {
     info += '<li>Ceiling: ' + zoneSpecToString(feature.attributes['ceiling']) + '</li>';
     info += '</li></fieldset>';
 
-    var feat_lonlat_center = feature.geometry.getBounds().getCenterLonLat();
-    map.panTo(feat_lonlat_center);
+//    var feat_lonlat_center = feature.geometry.getBounds().getCenterLonLat();
+    var pixel = globalSelectCtrl.handlers.feature.evt.xy;
+    var location = map.getLonLatFromPixel(pixel);
+
+    map.panTo(location);
 
     var popup = new OpenLayers.Popup.FramedCloud(
         "zone-info", 
-        feat_lonlat_center,
+        location,
         null,
         info,
         null,true);
     popup.autoSize = false;
 
     map.addPopup(popup, true);
-}
-
-function clearZoneInfo(feature) {
-    $('#zone-info').html("");
 }
 
 function cleanIntersection() {
