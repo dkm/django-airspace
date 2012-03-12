@@ -1390,6 +1390,7 @@ if(this.extractWaypoints){var waypoints=doc.getElementsByTagName("wpt");for(var 
 var wpt=new OpenLayers.Geometry.Point(waypoints[l].getAttribute("lon"),waypoints[l].getAttribute("lat"));features.push(new OpenLayers.Feature.Vector(wpt,attrs));}}
 if(this.internalProjection&&this.externalProjection){for(var g=0,featLength=features.length;g<featLength;g++){features[g].geometry.transform(this.externalProjection,this.internalProjection);}}
 return features;},extractSegment:function(segment,segmentType){var points=this.getElementsByTagNameNS(segment,segment.namespaceURI,segmentType);var point_features=[];for(var i=0,len=points.length;i<len;i++){var p=new OpenLayers.Geometry.Point(points[i].getAttribute("lon"),points[i].getAttribute("lat"));var ele=points[i].getElementsByTagName("ele");if(ele){p.z=parseFloat(ele[0].textContent);}
+var timestamp=points[i].getElementsByTagName("time");if(timestamp){p.time=timestamp[0].textContent;}
 point_features.push(p);}
 return new OpenLayers.Geometry.LineString(point_features);},parseAttributes:function(node){var attributes={};var attrNode=node.firstChild,value,name;while(attrNode){if(attrNode.nodeType==1&&attrNode.firstChild){value=attrNode.firstChild;if(value.nodeType==3||value.nodeType==4){name=(attrNode.prefix)?attrNode.nodeName.split(":")[1]:attrNode.nodeName;if(name!="trkseg"&&name!="rtept"){attributes[name]=value.nodeValue;}}}
 attrNode=attrNode.nextSibling;}
