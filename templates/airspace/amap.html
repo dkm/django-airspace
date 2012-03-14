@@ -149,6 +149,7 @@
                 highlightOnly: true,
                 renderIntent: "temporary",
             });
+	highlightCtrl.handlers.feature.stopDown = false;
 	map.addControl(highlightCtrl);
 
 	// don't change this name.
@@ -160,6 +161,7 @@
 	         onSelect: displayZoneInfo,
 	        }
             );
+	globalSelectCtrl.handlers.feature.stopDown = false;
 	map.addControl(globalSelectCtrl);
 
         map.addControl(new OpenLayers.Control.MousePosition());
