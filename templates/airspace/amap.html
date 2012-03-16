@@ -47,7 +47,6 @@
     </div>
 
     <div id="left">
-      <div id="spinner-ajax-load"></div>
       <form id="name-query" action="#">
 	<p>
 	  <input type="text" id="name-query-id" name="name-query-search" size="14" /><input type="submit" name="name-query" value="Find"/>
@@ -96,6 +95,7 @@
           <label for="lineToggle">draw path</label> 
         </li> 
       </ul>
+      <div id="spinner-ajax-load"></div>
 
       <div id="highlighted"></div> 
     </div> <!-- left -->
@@ -168,6 +168,8 @@
         map.addControl(new OpenLayers.Control.MousePosition());
 
 	map.events.register("moveend", map, function(evt){
+	    $('#spinner-ajax-load').show();
+
             bounds = map.getExtent().transform(map.projection, map.displayProjection);
             $.getJSON('/api/v1/airspacesID/bbox/?q=' + bounds.toBBOX() + '&format=json&limit=0', 
                       function(data) {
