@@ -59,6 +59,13 @@
 	</p>
       </form>
 
+      <form>
+	<p>
+	  <input type="checkbox" id="automatic-update-visible" name="automatic-update-visible"
+	  checked="checked" /> automatic update.
+	</p>
+      </form>
+
       <form action="#">
 	<p>
 	  Search radius in m for point selection : <input type="text" id="radius-search" name="radius-search" value="5000" />
@@ -167,7 +174,7 @@
 
         map.addControl(new OpenLayers.Control.MousePosition());
 
-	map.events.register("moveend", map, function(evt){
+	var update_visible_airspace = function(evt){
 	    $('#spinner-ajax-load').show();
 
             bounds = map.getExtent().transform(map.projection, map.displayProjection);
@@ -175,7 +182,26 @@
                       function(data) {
 	                   getAndDisplay(vectors, data.map(function(x){return x.id;}));
                       });
-	});
+	};
+
+	var automaticUpdate = function (b) { 
+	      if (b) {
+                   $('#automatic-update-visible').prop("checked", true).change();
+              } else {
+                   $('#automatic-update-visible').prop("checked", false).change();
+              }
+        };
+
+	map.events.register("moveend", map, update_visible_airspace);
+
+	$('#automatic-update-visible').change(function(){
+                 if (this.checked) {
+                      map.events.register("moveend", map, update_visible_airspace);
+                 } else {
+                     map.events.unregister("moveend", map, update_visible_airspace);
+                 }
+
+        });
 
         highlightCtrl.activate();
         layer_switcher.activate();
@@ -219,7 +245,9 @@
 
 	// for line drawing selection
 	var path_control_done = function (path) {
+            automaticUpdate(false);
             $('#spinner-ajax-load').show();
+
 	    var path_copy = path.clone()
 	    path.transform(map.projection, map.displayProjection);
 	    var tmp_str = path.toString();
@@ -236,6 +264,7 @@
 	
 	// for point selection
         var pnt_control_done = function (point) {
+             automaticUpdate(false);
              point.transform(map.projection, map.displayProjection);
              $('#spinner-ajax-load').show();
              $.getJSON('/api/v1/airspacesID/point/?limit=0&format=json&q=' + point.x + ',' + point.y +'&r=' + $('#radius-search').val(), 
@@ -258,6 +287,7 @@
        }
 
        $('#selected-airspace-form').submit( function () {
+            automaticUpdate(false);
 	    $('#spinner-ajax-load').show();
             bounds = overlay_vectors.features[0];
 
@@ -273,6 +303,7 @@
             element: $('#file-uploader')[0],
             multiple: false,
             onSubmit : function( id, fileName) {
+               automaticUpdate(false);
                $('#spinner-ajax-load').show();
             },
             onComplete: function( id, fileName, data ) {
