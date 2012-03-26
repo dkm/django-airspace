@@ -81,7 +81,7 @@ def json_track_upload( request ):
     # save the file
     success = save_upload( upload, dfilename, is_raw )
 
-    return HttpResponseRedirect('/api/v1/intersections/gpx/' + filename + '/')
+    return HttpResponseRedirect('/api/v1/intersections/gpx/' + filename + '/?format=json')
 
 
 ### Heavily based on code from http://kuhlit.blogspot.com/2011/04/ajax-file-uploads-and-csrf-in-django-13.html
