@@ -140,13 +140,17 @@
  
         var osm = new OpenLayers.Layer.OSM();
 	osm.setIsBaseLayer(true);
- 
         map.addLayers([osm]);
+
 //	var layerCycleMap = new OpenLayers.Layer.OSM("t@h",
 //	                 "http://tah.openstreetmap.org/Tiles/tile/${z}/${x}/${y}.png");
 
-	var layerCycleMap = new OpenLayers.Layer.OSM("CycleMap", "http://a.tile.opencyclemap.org/cycle/${z}/${x}/${y}.png");
+	var layerCycleMap = new OpenLayers.Layer.OSM("CycleMap", "http://a.tile.opencyclemap.org/cycle/${z}/${x}/${y}.png",
+                     {tileOptions : {crossOriginKeyword: null}}
+                  );
+
 //	var layerCycleMap = new OpenLayers.Layer.OSM("CycleMap", "http://a.thunderflames.org/tiles/cycle/${z}/${x}/${y}.png");
+	layerCycleMap.setIsBaseLayer(true);
 	map.addLayer(layerCycleMap);
  
 	var layer_switcher = new OpenLayers.Control.LayerSwitcher();
