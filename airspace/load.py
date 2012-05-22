@@ -8,7 +8,7 @@ airspaces_mapping = {
     'name' : 'NAME',
     'clazz' : 'CLASS',
     'geom' : 'POLYGON',
-
+    'ext_info' : 'EXT_INFO',
     'ceil_alti' : 'CEIL_ALTI',
     'ceil_alti_m' : 'CEIL_ALTIM',
     'ceil_ref' : 'CEIL_REF',
@@ -641,4 +641,4 @@ def run(verbose=True):
     lm = LayerMapping(AirSpaces, airspace_shp, airspaces_mapping,
                       transform=False, encoding='UTF-8')
 
-    lm.save(strict=True, verbose=verbose)
+    lm.save(strict=True, verbose=verbose, progress=True)
