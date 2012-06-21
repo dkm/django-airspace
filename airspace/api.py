@@ -50,7 +50,11 @@ from airspace.helpers import interpolate_linestring, get_relief_profile_along_tr
 def _internal_get_bbox_AS(request, **kwargs):
     q = request.GET.get('q', '').strip()
     m = re.match('(?P<lowlat>-?[\d\.]+),(?P<lowlon>-?[\d\.]+),(?P<highlat>-?[\d\.]+),(?P<highlon>-?[\d\.]+)', q)
-
+    sclazz = request.GET.get('clazz', '').strip()
+    clazz = []
+    if sclazz:
+        clazz = sclazz.split(',')
+    print clazz
     if not m:
         raise ImmediateHttpResponse(response=HttpNotFound())
 
@@ -64,9 +68,11 @@ def _internal_get_bbox_AS(request, **kwargs):
                          (float(highlat), float(highlon)),
                          (float(highlat), float(lowlon)),
                          (float(lowlat), float(lowlon))))
+    if clazz:
+        spaces = AirSpaces.objects.filter(geom__intersects=zone_bbox, clazz__in=clazz)
+    else:
+        spaces = AirSpaces.objects.filter(geom__intersects=zone_bbox)
 
-    spaces = AirSpaces.objects.filter(geom__intersects=zone_bbox)
-        
     return spaces
 
 
