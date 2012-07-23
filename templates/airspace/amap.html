@@ -76,6 +76,14 @@
 	  checked="checked" /> automatic update.
 	</p>
       </form>
+      
+      <form>
+	<fieldset>
+	  <legend>Displayed classes</legend>
+	  <p id="airspace-class-filter">
+	  </p>
+	</fieldset>
+      </form>
 
       <form action="#">
 	<p>
@@ -119,6 +127,29 @@
     </div> <!-- left -->
 
     <script defer="defer" type="text/javascript"> 
+       var cb_class_filters="";
+       for(var clazz in airspace_classes) {
+             cb_class_filters+=
+             "<input type=\"checkbox\" id=\"classfilter" + clazz + "\" name=\"" + airspace_classes[clazz] + "\"" +
+                  "value=\"none\" class=\"classfilter-class\"checked=\"checked\" " + "  />" +
+                  airspace_classes[clazz] + "<br/>";
+
+       }
+       $('#airspace-class-filter').html(cb_class_filters);
+
+       $('.classfilter-class').change( function() {
+          var i = 0;
+          selected_airspaces_classes = [];
+          $('.classfilter-class').each( function() {
+             if ($(this).prop('checked'))
+                selected_airspaces_classes.push($(this).prop('name'));
+             refreshFilter();
+          } );
+          refreshVisibleView();
+      } );
+
+
+
 	$('#spinner-ajax-load').hide();
 	$('#spinner-ajax-load').html('<img src="{{ STATIC_URL}}img/ajax-loader.gif" alt="loading"/> Loading data from remote server...');
         var map = new OpenLayers.Map('map', {
@@ -195,11 +226,7 @@
 	var update_visible_airspace = function(evt){
 	    $('#spinner-ajax-load').show();
 
-            bounds = map.getExtent().transform(map.projection, map.displayProjection);
-            $.getJSON('/api/v1/airspacesID/bbox/?q=' + bounds.toBBOX() + '&format=json&limit=0', 
-                      function(data) {
-	                   getAndDisplay(vectors, data.map(function(x){return x.id;}));
-                      });
+            refreshVisibleView();
 	};
 
 	var automaticUpdate = function (b) { 
@@ -252,11 +279,7 @@
 
         $('#update-visible-apiv1').submit( function () {
 	    $('#spinner-ajax-load').show();
-            bounds = map.getExtent().transform(map.projection, map.displayProjection);
-            $.getJSON('/api/v1/airspacesID/bbox/?q=' + bounds.toBBOX() + '&format=json&limit=0', 
-                      function(data) {
-	                   getAndDisplay(vectors, data.map(function(x){return x.id;}));
-                      });
+            refreshVisibleView();
             return false;
         });
 
@@ -303,18 +326,6 @@
        for(var key in drawControls) {
              map.addControl(drawControls[key]);
        }
-
-       $('#selected-airspace-form').submit( function () {
-            automaticUpdate(false);
-	    $('#spinner-ajax-load').show();
-            bounds = overlay_vectors.features[0];
-
-            $.getJSON('/airspace/json/bbox/id/' + bounds.toBBOX(), 
-                      function(data) {
-	                   getAndDisplay(vectors, data);
-                      });
-            return false;
-        });
 
         var uploader = new qq.FileUploader( {
             action: "/airspace/json/trackup",

@@ -15,13 +15,21 @@
  //   You should have received a copy of the GNU General Public License
  //   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 var inter_colors = ["maroon", "red", "orange", "yellow", "olive",
 		    "purple", "fuchsia", "white", "lime", "green",
 		    "navy", "blue", "aqua", "teal", "black", "silver", 
 		    "gray"];
 
 var inter_colors_index = 0;
+
+
+var airspace_classes = ["A", "B", "C", "D", "E", "F", "G", "P", "W", "Q"];
+var selected_airspaces_classes = airspace_classes.slice();
+var airspace_clazz_filter = selected_airspaces_classes.join();
+
+function refreshFilter(){
+    airspace_clazz_filter = selected_airspaces_classes.join();
+}
 
 var inter_vectors;
 
@@ -152,6 +160,15 @@ function getTrackFromGpx(gpx_track_url, track_layer) {
     }
 
     return new OpenLayers.Geometry.LineString(gpx_points);
+}
+
+function refreshVisibleView(){
+    var bounds = map.getExtent().transform(map.projection, map.displayProjection);
+
+    $.getJSON('/api/v1/airspacesID/bbox/?q=' + bounds.toBBOX() + '&format=json&limit=0&clazz=' + airspace_clazz_filter,
+              function(data) {
+	          getAndDisplay(vectors, data.map(function(x){return x.id;}));
+              });
 }
 
 function zoomAndPanToExtent(bounds){
