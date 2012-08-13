@@ -54,7 +54,6 @@ def _internal_get_bbox_AS(request, **kwargs):
     clazz = []
     if sclazz:
         clazz = sclazz.split(',')
-    print clazz
     if not m:
         raise ImmediateHttpResponse(response=HttpNotFound())
 
