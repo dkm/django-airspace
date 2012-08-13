@@ -11,6 +11,15 @@ div#chart-vertical {
     float: left;
 }
 
+
+#nominatim-box input[type=text] { 
+    /* width : 100%; */
+}
+
+#nominatim-box input.find { 
+    
+}
+
 /* div#charts div { */
 /*     float: left; */
 /* } */

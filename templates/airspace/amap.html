@@ -14,6 +14,7 @@
     <script type="text/javascript" src="{{ STATIC_URL }}js/airspace.js"></script> 
 
     <script type="text/javascript" src="{{ STATIC_URL }}js/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jQGeoSearch.js"></script>
 
     <script type="text/javascript" src="{{ STATIC_URL }}js/flot/jquery.flot.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/flot/jquery.flot.crosshair.js"></script>
@@ -58,15 +59,22 @@
     </div>
 
     <div id="left">
+      <fieldset>
       <form id="name-query" action="#">
 	<p>
-	  <input type="text" id="name-query-id" name="name-query-search" size="14" /><input type="submit" name="name-query" value="Find"/>
+	  <input type="text" id="name-query-id" name="name-query-search" size="14" />
+          <input type="submit" name="name-query" value="Find airspace"/>
 	</p>
       </form>
+      </fieldset>
 
+      <fieldset id="nominatim-box">
+      <div id="location-name-search-id"></div>
+      </fieldset>
+      
       <form id="update-visible-apiv1" action="#">
 	<p>
-	  <input type="submit" name="update-visible-apiv1" value="Update Visible Airspace"/>
+	  <input type="submit" name="update-visible-apiv1" value="Refresh Airspace"/>
 	</p>
       </form>
 
@@ -371,6 +379,13 @@
                     }
                 }
          }
+
+	$("#location-name-search-id").geoSearch({
+            service: "nominatim",
+            handler: function(r) {
+                    map.setCenter(new OpenLayers.LonLat(r.lngLat.lng, r.lngLat.lat).transform(map.displayProjection, map.projection), 15);
+           }
+        });
 
       </script> 
  </body> 
