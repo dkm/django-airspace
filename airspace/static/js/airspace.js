@@ -23,7 +23,7 @@ var inter_colors = ["maroon", "red", "orange", "yellow", "olive",
 var inter_colors_index = 0;
 
 
-var airspace_classes = ["A", "B", "C", "D", "E", "F", "G", "P", "W", "Q"];
+var airspace_classes = ["A", "B", "C", "D", "E", "F", "G", "P", "Q", "R", "W"];
 var selected_airspaces_classes = airspace_classes.slice();
 var airspace_clazz_filter = selected_airspaces_classes.join();
 
